@@ -5,7 +5,7 @@ export interface FetchProduct {
   cost_price?: number
   purchase_total?: number
   quantity?: number
-  created_at?: string
+  created_at: string
   updated_by?: number | null
 }
 
@@ -35,5 +35,5 @@ export interface FetchProductSale {
   debtor_id?: number | null
   computer_id?: number | null
   computer_number?: number | null
-  created_at?: string
+  created_at: string
 }

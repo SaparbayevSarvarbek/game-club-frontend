@@ -4,6 +4,7 @@ import SessionDialog from '../components/user/SessionDialog'
 import api from '../services/api'
 import { FetchComputer, FetchProduct, FetchProductSale } from '../types'
 import { formatCurrency } from '../utils/format'
+import { parseError } from '../utils/error'
 import { ComputerDesktopIcon, PlayIcon } from '@heroicons/react/24/outline'
 
 const DashboardPage = () => {
@@ -99,8 +100,8 @@ const DashboardPage = () => {
       setTimeout(() => {
         loadData()
       }, 500)
-    } catch (err: any) {
-      const errorMsg = err?.response?.data?.detail || 'Sessiyani boshlashda xatolik'
+    } catch (err: unknown) {
+      const errorMsg = parseError(err) || 'Sessiyani boshlashda xatolik'
       setError(errorMsg)
       setMessage('')
     }
@@ -137,8 +138,8 @@ const DashboardPage = () => {
       setSelected(null)
       setActiveSession(null)
       await loadData()
-    } catch (err: any) {
-      const errorMsg = err?.response?.data?.detail || 'Sessiyani saqlashda xatolik'
+    } catch (err: unknown) {
+      const errorMsg = parseError(err) || 'Sessiyani saqlashda xatolik'
       setError(errorMsg)
       setMessage('')
     }
@@ -156,8 +157,8 @@ const DashboardPage = () => {
       if (showSalesDrawer) {
         await refreshSales()
       }
-    } catch (err: any) {
-      const errorMsg = err?.response?.data?.detail || 'Sessiyani yakunlashda xatolik. To\'lov miqdorlarini tekshiring.'
+    } catch (err: unknown) {
+      const errorMsg = parseError(err) || "Sessiyani yakunlashda xatolik. To'lov miqdorlarini tekshiring."
       setError(errorMsg)
       setMessage('')
     }
@@ -327,12 +328,12 @@ const DashboardPage = () => {
                     <div className="py-10 text-center text-slate-500 dark:text-slate-400">Yuklanmoqda...</div>
                   ) : (
                     (() => {
-                      const todays = (sales || []).filter((s) => s && s.created_at && new Date(s.created_at).toDateString() === new Date().toDateString())
+                      const todays = (sales || []).filter((s) => !!s?.created_at && new Date(s.created_at as string).toDateString() === new Date().toDateString())
                       if (!todays.length) {
                         return <div className="py-10 text-center text-sm text-slate-500 dark:text-slate-400">Bugun hali mahsulot sotilmagan</div>
                       }
                       return todays
-                        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                        .sort((a, b) => (b.created_at ? new Date(b.created_at).getTime() : 0) - (a.created_at ? new Date(a.created_at).getTime() : 0))
                         .map((s) => {
                           const prod = products.find((p) => p.id === s.product_id)
                           const name = s.product_name || productNameById.get(s.product_id) || prod?.name || '—'
@@ -348,7 +349,7 @@ const DashboardPage = () => {
 
                               <div className="ml-4 text-right w-36 flex-shrink-0">
                                 <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(Number(s.unit_price ?? s.total_amount ?? 0))}</p>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{new Date(s.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{s.created_at ? new Date(s.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</p>
                               </div>
                             </div>
                           )
