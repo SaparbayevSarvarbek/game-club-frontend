@@ -86,9 +86,7 @@ const DebtPage = () => {
                     onClick={() => setSelected(debtor)}
                     className={`w-full rounded-2xl p-4 text-left transition ${selected?.id === debtor.id ? 'bg-sky-600 text-white' : 'bg-white text-slate-900 hover:bg-slate-100'}`}
                   >
-                    <p className="font-medium">{debtor.first_name} {debtor.last_name}</p>
-                    <p className="text-sm text-slate-500">{debtor.phone}</p>
-                    <p className="mt-2 text-sm">Debt: {formatCurrency(Number(debtor.total_debt))}</p>
+                    <div className="flex items-center justify-between gap-3"><p className="font-semibold">{debtor.first_name} {debtor.last_name}</p><span className="rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold text-rose-700 dark:bg-rose-900/50 dark:text-rose-200">{formatCurrency(Number(debtor.total_debt))}</span></div><p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{debtor.phone}</p>
                   </button>
                 ))}
                 {debtors.length === 0 && <p className="text-sm text-slate-500">No debtors found.</p>}
@@ -164,7 +162,7 @@ const DebtPage = () => {
         </section>
         {showHistory && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4">
-            <div className="w-full max-w-3xl rounded-3xl bg-white p-6">
+            <div className="w-full max-w-3xl rounded-3xl bg-white p-6 dark:bg-slate-900">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-slate-900">Qarzdor tarixi</h3>
                 <button onClick={() => setShowHistory(false)} className="rounded-full border border-slate-300 bg-white px-3 py-1 text-sm hover:bg-slate-100">Orqaga</button>
@@ -177,10 +175,10 @@ const DebtPage = () => {
                 ) : (
                   <div className="space-y-3 max-h-96 overflow-y-auto">
                     {history.map((h) => (
-                      <div key={h.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                      <div key={h.id} className={`rounded-2xl border p-4 ${Number(h.amount) < 0 ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-900/60 dark:bg-emerald-950/40' : 'border-rose-200 bg-rose-50 dark:border-rose-900/60 dark:bg-rose-950/40'}`}> 
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="font-medium">{formatCurrency(Number(h.amount))}</p>
+                            <p className={`font-semibold ${Number(h.amount) < 0 ? 'text-emerald-700 dark:text-emerald-200' : 'text-rose-700 dark:text-rose-200'}`}>{formatCurrency(Math.abs(Number(h.amount)))} | {Number(h.amount) < 0 ? 'To\'langan' : 'Qarz'}</p>
                             {h.note && <p className="text-sm text-slate-500">{h.note}</p>}
                           </div>
                           <div className="text-sm text-slate-500">{new Date(h.created_at).toLocaleString('uz-UZ')}</div>
@@ -199,3 +197,4 @@ const DebtPage = () => {
 }
 
 export default DebtPage
+

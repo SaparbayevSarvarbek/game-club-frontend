@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Layout from '../components/common/Layout'
 import api from '../services/api'
 import { formatCurrency, formatNumberInput, parseNumberInput } from '../utils/format'
@@ -8,35 +8,45 @@ const AdminProductsPage = () => {
   const [name, setName] = useState('')
   const [price, setPrice] = useState('')
   const [quantity, setQuantity] = useState('0')
+  const [purchaseTotal, setPurchaseTotal] = useState('')
   const [editing, setEditing] = useState<any>(null)
   const [message, setMessage] = useState('')
 
-  const load = async () => {
-    const data = await api.fetchProducts()
-    setProducts(data)
-  }
+  const load = async () => setProducts(await api.fetchProducts())
 
   useEffect(() => {
     load().catch(console.error)
   }, [])
+
+  const costPrice = useMemo(() => {
+    const qty = parseNumberInput(quantity)
+    const total = parseNumberInput(purchaseTotal)
+    return qty > 0 ? total / qty : 0
+  }, [quantity, purchaseTotal])
 
   const handleSave = async () => {
     setMessage('')
     try {
       const numericPrice = parseNumberInput(price)
       const numericQuantity = parseNumberInput(quantity)
-      if (numericPrice <= 0) {
-        setMessage('Narx noldan katta boʻlishi kerak')
-        return
+      const numericPurchaseTotal = parseNumberInput(purchaseTotal)
+      if (!name.trim()) return setMessage('Mahsulot nomi kiritilishi kerak')
+      if (numericQuantity <= 0) return setMessage('Mahsulot soni noldan katta bo\'lishi kerak')
+      if (numericPurchaseTotal < 0) return setMessage('Umumiy xarid summasi noto\'g\'ri')
+      if (numericPrice <= 0) return setMessage('Sotish narxi noldan katta bo\'lishi kerak')
+      const payload = {
+        name: name.trim(),
+        quantity: numericQuantity,
+        purchase_total: numericPurchaseTotal,
+        cost_price: costPrice,
+        price: numericPrice,
       }
-      if (editing) {
-        await api.updateProduct(editing.id, { name, price: numericPrice, quantity: numericQuantity })
-      } else {
-        await api.createProduct({ name, price: numericPrice, quantity: numericQuantity })
-      }
+      if (editing) await api.updateProduct(editing.id, payload)
+      else await api.createProduct(payload)
       setName('')
       setPrice('')
-        setQuantity('0')
+      setQuantity('0')
+      setPurchaseTotal('')
       setEditing(null)
       await load()
       setMessage('Mahsulot muvaffaqiyatli saqlandi')
@@ -50,63 +60,44 @@ const AdminProductsPage = () => {
     setName(product.name)
     setPrice(String(product.price))
     setQuantity(String(product.quantity ?? 0))
+    setPurchaseTotal(String(product.purchase_total ?? 0))
   }
 
   const remove = async (id: number) => {
     await api.deleteProduct(id)
-    load()
+    await load()
   }
+
+  const inputClass = 'mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100'
 
   return (
     <Layout>
       <div className="space-y-6">
-        <section className="rounded-3xl bg-white p-6 shadow-soft">
-          <h2 className="text-xl font-semibold text-slate-900">Mahsulot boshqaruvi</h2>
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
-            <label className="block md:col-span-2">
-              <span className="text-sm text-slate-600">Nomi</span>
-              <input value={name} onChange={(e) => setName(e.target.value)} className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3" />
-            </label>
-            <label className="block">
-              <span className="text-sm text-slate-600">Narx</span>
-              <input
-                type="text"
-                value={formatNumberInput(price)}
-                onChange={(e) => setPrice(e.target.value)}
-                onBlur={() => setPrice(formatNumberInput(price))}
-                onFocus={() => setPrice(String(parseNumberInput(price) || ''))}
-                placeholder="10 000"
-                className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3"
-              />
-            </label>
-            <label className="block">
-              <span className="text-sm text-slate-600">Soni</span>
-              <input
-                type="number"
-                min={0}
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3"
-              />
-            </label>
-            <button onClick={handleSave} className="md:col-span-3 rounded-2xl bg-sky-600 px-5 py-3 text-sm font-semibold text-white hover:bg-sky-500">
-              {editing ? 'Mahsulotni yangilash' : 'Mahsulot qoʻshish'}
-            </button>
+        <section className="rounded-3xl bg-white p-6 shadow-soft dark:bg-slate-900">
+          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Mahsulot boshqaruvi</h2>
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Ombor soni, umumiy xarid summasi va sotish narxini kiriting. Tan narx avtomatik hisoblanadi.</p>
+          <div className="mt-6 grid gap-4 md:grid-cols-4">
+            <label className="block md:col-span-2"><span className="text-sm text-slate-600 dark:text-slate-300">Mahsulot nomi</span><input value={name} onChange={(e) => setName(e.target.value)} className={inputClass} /></label>
+            <label className="block"><span className="text-sm text-slate-600 dark:text-slate-300">Umumiy soni</span><input type="text" value={formatNumberInput(quantity)} onChange={(e) => setQuantity(e.target.value)} onFocus={() => setQuantity(String(parseNumberInput(quantity) || ''))} onBlur={() => setQuantity(formatNumberInput(quantity))} className={inputClass} /></label>
+            <label className="block"><span className="text-sm text-slate-600 dark:text-slate-300">Umumiy xarid summasi</span><input type="text" value={formatNumberInput(purchaseTotal)} onChange={(e) => setPurchaseTotal(e.target.value)} onFocus={() => setPurchaseTotal(String(parseNumberInput(purchaseTotal) || ''))} onBlur={() => setPurchaseTotal(formatNumberInput(purchaseTotal))} className={inputClass} /></label>
+            <div className="rounded-3xl bg-blue-50 p-4 dark:bg-blue-950/40"><p className="text-sm text-blue-700 dark:text-blue-200">Tan narx</p><p className="mt-2 text-2xl font-bold text-blue-800 dark:text-blue-100">{formatCurrency(costPrice)}</p></div>
+            <label className="block md:col-span-3"><span className="text-sm text-slate-600 dark:text-slate-300">Sotish narxi</span><input type="text" value={formatNumberInput(price)} onChange={(e) => setPrice(e.target.value)} onBlur={() => setPrice(formatNumberInput(price))} onFocus={() => setPrice(String(parseNumberInput(price) || ''))} placeholder="10 000" className={inputClass} /></label>
+            <button onClick={handleSave} className="md:col-span-4 rounded-2xl bg-sky-600 px-5 py-3 text-sm font-semibold text-white hover:bg-sky-500">{editing ? 'Mahsulotni yangilash' : 'Mahsulot qo\'shish'}</button>
           </div>
-          {message && <p className={`mt-4 text-sm ${message.includes('muvaffaq') ? 'text-emerald-600' : 'text-rose-600'}`}>{message}</p>}
+          {message && <p className={`mt-4 rounded-2xl p-3 text-sm font-medium ${message.includes('muvaffaq') ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-200' : 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-200'}`}>{message}</p>}
         </section>
-        <section className="rounded-3xl bg-white p-6 shadow-soft">
-          <h3 className="text-lg font-semibold text-slate-900">Mahsulotlar roʻyxati</h3>
+        <section className="rounded-3xl bg-white p-6 shadow-soft dark:bg-slate-900">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Mahsulotlar ro'yxati</h3>
           <div className="mt-6 space-y-3">
             {products.map((product) => (
-              <div key={product.id} className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div key={product.id} className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:bg-slate-800">
                 <div>
-                  <p className="text-base font-semibold text-slate-900">{product.name}</p>
-                  <p className="text-sm text-slate-500">{formatCurrency(Number(product.price))} — <span className="font-medium">{product.quantity ?? 0} dona</span></p>
+                  <p className="text-base font-semibold text-slate-900 dark:text-slate-100">{product.name}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Qolgan: <span className="font-medium">{product.quantity ?? 0} dona</span> | Sotish: <span className="font-semibold text-blue-600 dark:text-blue-300">{formatCurrency(Number(product.price))}</span> | Tan narx: {formatCurrency(Number(product.cost_price ?? 0))}</p>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => startEdit(product)} className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700">Tahrirlash</button>
-                  <button onClick={() => remove(product.id)} className="rounded-2xl bg-rose-500 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-400">Oʻchirish</button>
+                  <button onClick={() => startEdit(product)} className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">Tahrirlash</button>
+                  <button onClick={() => remove(product.id)} className="rounded-2xl bg-rose-500 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-400">O'chirish</button>
                 </div>
               </div>
             ))}

@@ -107,6 +107,7 @@ const fetchDailyReport = async (id: number) => (await instance.get(`/api/daily-r
 const createDailyReport = async (payload: any) => (await instance.post('/api/daily-reports', payload)).data
 const productSale = async (payload: any) => (await instance.post('/api/productsales', payload)).data
 const fetchProductSales = async (params?: any) => (await instance.get('/api/productsales', { params })).data
+const fetchDebtTransactions = async (params?: any) => (await instance.get('/api/debt-transactions', { params })).data
 
 const unavailable = async (..._args: any[]): Promise<any> => {
   throw new Error('Bu eski modul yangi finance panelda ishlatilmaydi')
@@ -163,4 +164,5 @@ export default {
   createDailyReport,
   productSale,
   fetchProductSales,
+  fetchDebtTransactions,
 }

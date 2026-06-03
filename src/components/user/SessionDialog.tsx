@@ -43,25 +43,25 @@ const DebtorInlineAdd = ({ setDebtors, setDebtorId }: { setDebtors: (d: any[]) =
 
   if (!show) {
     return (
-      <button onClick={() => setShow(true)} className="rounded-2xl border border-sky-300 bg-sky-50 px-4 py-2 text-sm font-medium text-sky-600 hover:bg-sky-100">
+      <button onClick={() => setShow(true)} className="rounded-2xl border border-sky-300 dark:border-sky-700 bg-sky-50 dark:bg-sky-950/40 px-4 py-2 text-sm font-medium text-sky-600 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-900/60">
         + Yangi qarzdor
       </button>
     )
   }
 
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-4 space-y-3">
-      <h4 className="font-semibold text-slate-900">Yangi qarzdor qoʻshing</h4>
+    <div className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 space-y-3">
+      <h4 className="font-semibold text-slate-900 dark:text-slate-100">Yangi qarzdor qoʻshing</h4>
       <div className="grid gap-3 sm:grid-cols-2">
-        <input placeholder="Ism va familiya" value={fullName} onChange={(e) => setFullName(e.target.value)} className="rounded-2xl border border-slate-300 px-3 py-2" />
-        <input placeholder="Telefon" value={phone} onChange={(e) => setPhone(e.target.value)} className="rounded-2xl border border-slate-300 px-3 py-2" />
+        <input placeholder="Ism va familiya" value={fullName} onChange={(e) => setFullName(e.target.value)} className="rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-3 py-2" />
+        <input placeholder="Telefon" value={phone} onChange={(e) => setPhone(e.target.value)} className="rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-3 py-2" />
       </div>
-      {error && <p className="text-sm text-rose-600">{error}</p>}
+      {error && <p className="text-sm text-rose-600 dark:text-rose-400">{error}</p>}
       <div className="flex gap-3">
-        <button onClick={create} disabled={saving} className="rounded-2xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-400 disabled:opacity-60">
+        <button onClick={create} disabled={saving} className="rounded-2xl bg-emerald-500 dark:bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-400 dark:hover:bg-emerald-500 disabled:opacity-60">
           {saving ? 'Saqlanamoqda...' : 'Saqlash'}
         </button>
-        <button onClick={() => { setShow(false); setError('') }} className="rounded-2xl border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
+        <button onClick={() => { setShow(false); setError('') }} className="rounded-2xl border border-slate-300 dark:border-slate-600 dark:bg-slate-700 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600">
           Bekor qilish
         </button>
       </div>
@@ -243,26 +243,26 @@ const SessionDialog = ({ computer, products, close, onStart, onSave, onComplete,
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-4">
-      <div className="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-soft">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/70 p-3 sm:items-center sm:p-4">
+      <div className="my-4 max-h-[calc(100vh-2rem)] w-full max-w-2xl overflow-y-auto overscroll-contain rounded-3xl bg-white p-4 shadow-soft dark:bg-slate-950 sm:p-6">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <h2 className="text-xl font-semibold text-slate-900">Sessiya: #{computer.number}</h2>
-            <p className="text-sm text-slate-500">{computer.type}</p>
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Sessiya: #{computer.number}</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{computer.type}</p>
           </div>
-          <button onClick={close} disabled={processing} className="rounded-2xl border px-4 py-2 text-sm text-slate-600">Bekor qilish</button>
+          <button onClick={close} disabled={processing} className="rounded-2xl border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white">Bekor qilish</button>
         </div>
 
         <div className="mt-6 space-y-6">
           {computer.is_active && activeSession && (
-            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-sm text-slate-500">Faol sessiya boshlangan</p>
-              <p className="mt-2 text-lg font-semibold text-slate-900">{new Date(activeSession.started_at).toLocaleString('uz-UZ')}</p>
-              <p className="mt-2 text-sm text-slate-500">Oldingi mahsulotlar: {formatCurrency(existingProductsTotal)}</p>
+            <div className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-4">
+              <p className="text-sm text-slate-500 dark:text-slate-400">Faol sessiya boshlangan</p>
+              <p className="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">{new Date(activeSession.started_at).toLocaleString('uz-UZ')}</p>
+              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Oldingi mahsulotlar: {formatCurrency(existingProductsTotal)}</p>
               {savedProducts.length > 0 && (
                 <div className="mt-3 space-y-2">
                   {savedProducts.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between rounded-2xl bg-white px-3 py-2 text-sm text-slate-700">
+                    <div key={item.id} className="flex items-center justify-between rounded-2xl bg-white dark:bg-slate-700 px-3 py-2 text-sm text-slate-700 dark:text-slate-200">
                       <span>{item.product_name || `Mahsulot #${item.product_id}`} x {item.quantity}</span>
                       <span className="font-medium">{formatCurrency(Number(item.price) * item.quantity)}</span>
                     </div>
@@ -274,7 +274,7 @@ const SessionDialog = ({ computer, products, close, onStart, onSave, onComplete,
 
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block">
-              <span className="text-sm text-slate-600">Kompyuter narxi</span>
+              <span className="text-sm text-slate-600 dark:text-slate-300">Kompyuter narxi</span>
               <input
                 type="text"
                 inputMode="numeric"
@@ -282,11 +282,11 @@ const SessionDialog = ({ computer, products, close, onStart, onSave, onComplete,
                 onChange={(e) => setComputerPrice(e.target.value)}
                 onBlur={() => setComputerPrice(formatNumberInput(computerPrice))}
                 onFocus={() => setComputerPrice(String(parseNumberInput(computerPrice) || ''))}
-                className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3"
+                className="mt-2 w-full rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-4 py-3"
               />
             </label>
             <label className="block">
-              <span className="text-sm text-slate-600">Chegirma miqdori</span>
+              <span className="text-sm text-slate-600 dark:text-slate-300">Chegirma miqdori</span>
               <input
                 type="text"
                 inputMode="numeric"
@@ -294,26 +294,26 @@ const SessionDialog = ({ computer, products, close, onStart, onSave, onComplete,
                 onChange={(e) => setDiscount(e.target.value)}
                 onBlur={() => setDiscount(formatNumberInput(discount))}
                 onFocus={() => setDiscount(String(parseNumberInput(discount) || ''))}
-                className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3"
+                className="mt-2 w-full rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-4 py-3"
               />
             </label>
           </div>
 
-          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+          <div className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-4">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-slate-900">Mahsulotlar</h3>
-              <button onClick={addProduct} className="rounded-full bg-sky-500 px-3 py-1 text-sm text-white hover:bg-sky-400">Mahsulot qoʻshish</button>
+              <h3 className="font-semibold text-slate-900 dark:text-slate-100">Mahsulotlar</h3>
+              <button onClick={addProduct} className="rounded-full bg-sky-500 dark:bg-sky-600 px-3 py-1 text-sm text-white hover:bg-sky-400 dark:hover:bg-sky-500">Mahsulot qoʻshish</button>
             </div>
             <div className="space-y-4">
               {selectedProducts.length === 0 ? (
-                <p className="text-sm text-slate-500">Mahsulot qoʻshish uchun tugmani bosing.</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Mahsulot qoʻshish uchun tugmani bosing.</p>
               ) : (
                 selectedProducts.map((item, index) => (
                   <div key={`${item.product_id}-${index}`} className="grid gap-3 sm:grid-cols-[1fr_100px_auto]">
                     <select
                       value={item.product_id}
                       onChange={(e) => changeRow(index, 'product_id', Number(e.target.value))}
-                      className="rounded-2xl border border-slate-300 px-4 py-3"
+                      className="rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-4 py-3"
                     >
                       {products.map((product) => (
                         <option key={product.id} value={product.id}>{product.name}</option>
@@ -324,9 +324,9 @@ const SessionDialog = ({ computer, products, close, onStart, onSave, onComplete,
                       min={1}
                       value={item.quantity}
                       onChange={(e) => changeRow(index, 'quantity', Number(e.target.value))}
-                      className="rounded-2xl border border-slate-300 px-4 py-3"
+                      className="rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-4 py-3"
                     />
-                    <button onClick={() => removeRow(index)} className="rounded-2xl bg-rose-500 px-4 py-3 text-sm text-white hover:bg-rose-400">Oʻchirish</button>
+                    <button onClick={() => removeRow(index)} className="rounded-2xl bg-rose-500 dark:bg-rose-600 px-4 py-3 text-sm text-white hover:bg-rose-400 dark:hover:bg-rose-500">Oʻchirish</button>
                   </div>
                 ))
               )}
@@ -334,44 +334,33 @@ const SessionDialog = ({ computer, products, close, onStart, onSave, onComplete,
           </div>
 
           <div className="grid gap-4 sm:grid-cols-3">
-            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-sm text-slate-500">Mahsulotlar jami</p>
-              <p className="mt-2 text-2xl font-semibold text-slate-900">{formatCurrency(productsTotal)}</p>
+            <div className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-4">
+              <p className="text-sm text-slate-500 dark:text-slate-400">Mahsulotlar jami</p>
+              <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(productsTotal)}</p>
             </div>
-            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-sm text-slate-500">Jami</p>
-              <p className="mt-2 text-2xl font-semibold text-slate-900">{formatCurrency(subtotal)}</p>
+            <div className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-4">
+              <p className="text-sm text-slate-500 dark:text-slate-400">Jami</p>
+              <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(subtotal)}</p>
             </div>
-            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-sm text-slate-500">Chegirma bilan</p>
-              <p className="mt-2 text-2xl font-semibold text-slate-900">{formatCurrency(totalWithDiscount)}</p>
+            <div className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-4">
+              <p className="text-sm text-slate-500 dark:text-slate-400">Chegirma bilan</p>
+              <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(totalWithDiscount)}</p>
             </div>
           </div>
 
-          {error && <p className="rounded-2xl bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}
+          {error && <p className="rounded-2xl bg-rose-50 dark:bg-rose-900/30 p-3 text-sm text-rose-700 dark:text-rose-300">{error}</p>}
 
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-            <button onClick={close} disabled={processing} className="rounded-2xl border border-slate-300 px-5 py-3 text-sm font-medium text-slate-700 hover:bg-slate-100">Orqaga</button>
-            <button onClick={handleSaveClick} disabled={processing} className="rounded-2xl border border-slate-300 px-5 py-3 text-sm font-medium text-slate-700 hover:bg-slate-100">Saqlash</button>
-            <button onClick={() => setShowPayment(true)} disabled={processing} className="rounded-2xl bg-sky-600 px-5 py-3 text-sm font-semibold text-white hover:bg-sky-500">Tolash</button>
+            <button onClick={close} disabled={processing} className="rounded-2xl border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-5 py-3 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700">Orqaga</button>
+            <button onClick={handleSaveClick} disabled={processing} className="rounded-2xl border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-5 py-3 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700">Saqlash</button>
+            <button onClick={() => setShowPayment(true)} disabled={processing} className="rounded-2xl bg-sky-600 dark:bg-sky-700 px-5 py-3 text-sm font-semibold text-white hover:bg-sky-500 dark:hover:bg-sky-600">Tolash</button>
           </div>
-        </div>
-      </div>
 
-      {showPayment && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-slate-900/60 p-4">
-          <div className="w-full max-w-xl rounded-3xl bg-white p-6 shadow-soft">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <h3 className="text-lg font-semibold text-slate-900">Toʻlov</h3>
-                <p className="text-sm text-slate-500">Jami toʻlov: {formatCurrency(totalWithDiscount)}</p>
-              </div>
-              <button onClick={() => setShowPayment(false)} disabled={processing} className="rounded-2xl border px-4 py-2 text-sm text-slate-600">Bekor qilish</button>
-            </div>
-
+          {showPayment && (
+            <div>
             <div className="mt-6 grid gap-4 sm:grid-cols-3">
               <label className="block">
-                <span className="text-sm text-slate-600">Naqd</span>
+                <span className="text-sm text-slate-600 dark:text-slate-300">Naqd</span>
                 <input
                   type="text"
                   inputMode="numeric"
@@ -379,11 +368,11 @@ const SessionDialog = ({ computer, products, close, onStart, onSave, onComplete,
                   onChange={(e) => setPaymentCash(e.target.value)}
                   onBlur={() => setPaymentCash(formatNumberInput(paymentCash))}
                   onFocus={() => setPaymentCash(String(parseNumberInput(paymentCash) || ''))}
-                  className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3"
+                  className="mt-2 w-full rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-4 py-3"
                 />
               </label>
               <label className="block">
-                <span className="text-sm text-slate-600">Karta</span>
+                <span className="text-sm text-slate-600 dark:text-slate-300">Karta</span>
                 <input
                   type="text"
                   inputMode="numeric"
@@ -391,11 +380,11 @@ const SessionDialog = ({ computer, products, close, onStart, onSave, onComplete,
                   onChange={(e) => setPaymentCard(e.target.value)}
                   onBlur={() => setPaymentCard(formatNumberInput(paymentCard))}
                   onFocus={() => setPaymentCard(String(parseNumberInput(paymentCard) || ''))}
-                  className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3"
+                  className="mt-2 w-full rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-4 py-3"
                 />
               </label>
               <label className="block">
-                <span className="text-sm text-slate-600">Qarz</span>
+                <span className="text-sm text-slate-600 dark:text-slate-300">Qarz</span>
                 <input
                   type="text"
                   inputMode="numeric"
@@ -403,18 +392,18 @@ const SessionDialog = ({ computer, products, close, onStart, onSave, onComplete,
                   onChange={(e) => setPaymentDebt(e.target.value)}
                   onBlur={() => setPaymentDebt(formatNumberInput(paymentDebt))}
                   onFocus={() => setPaymentDebt(String(parseNumberInput(paymentDebt) || ''))}
-                  className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3"
+                  className="mt-2 w-full rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-4 py-3"
                 />
               </label>
             </div>
 
             {parseNumberInput(paymentDebt) > 0 && (
-              <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-sm text-slate-500">Qarzdor tanlang</p>
+              <div className="mt-6 rounded-3xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-4">
+                <p className="text-sm text-slate-500 dark:text-slate-400">Qarzdor tanlang</p>
                 <select
                   value={debtorId ?? ''}
                   onChange={(e) => setDebtorId(e.target.value ? Number(e.target.value) : null)}
-                  className="mt-3 w-full rounded-2xl border border-slate-300 px-4 py-3"
+                  className="mt-3 w-full rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-4 py-3"
                 >
                   <option value="">Qarzdor tanlang</option>
                   {debtors.map((debtor) => (
@@ -429,17 +418,19 @@ const SessionDialog = ({ computer, products, close, onStart, onSave, onComplete,
               </div>
             )}
 
-            {error && <p className="mt-4 rounded-2xl bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}
+            {error && <p className="mt-4 rounded-2xl bg-rose-50 dark:bg-rose-900/30 p-3 text-sm text-rose-700 dark:text-rose-300">{error}</p>}
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
-              <button onClick={() => setShowPayment(false)} disabled={processing} className="rounded-2xl border border-slate-300 px-5 py-3 text-sm font-medium text-slate-700 hover:bg-slate-100">Orqaga</button>
-              <button onClick={handleConfirmPayment} disabled={processing} className="rounded-2xl bg-sky-600 px-5 py-3 text-sm font-semibold text-white hover:bg-sky-500">Toʻlovni yakunlash</button>
+              <button onClick={() => setShowPayment(false)} disabled={processing} className="rounded-2xl border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-5 py-3 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700">Orqaga</button>
+              <button onClick={handleConfirmPayment} disabled={processing} className="rounded-2xl bg-sky-600 dark:bg-sky-700 px-5 py-3 text-sm font-semibold text-white hover:bg-sky-500 dark:hover:bg-sky-600">Toʻlovni yakunlash</button>
             </div>
           </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   )
 }
 
 export default SessionDialog
+
