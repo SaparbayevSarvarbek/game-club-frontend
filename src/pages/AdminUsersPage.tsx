@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import Layout from '../components/common/Layout'
+import IconButton from '../components/common/IconButton'
 import api from '../services/api'
 
 const AdminUsersPage = () => {
@@ -98,7 +99,7 @@ const AdminUsersPage = () => {
                   <p className="mt-1 text-xs uppercase tracking-[0.2em] text-slate-400">{user.role === 'admin' ? 'Admin' : 'Foydalanuvchi'} {user.is_active ? '• faol' : '• nofaol'}</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <button onClick={() => remove(user.id)} className="rounded-2xl bg-rose-500 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-400">Oʻchirish</button>
+                  <IconButton onClick={() => remove(user.id)} title="O'chirish" variant="danger" icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1H10a1 1 0 00-1 1v3M4 7h16" /></svg>} />
                 </div>
               </div>
             ))}

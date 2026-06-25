@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import Layout from '../components/common/Layout'
+import IconButton from '../components/common/IconButton'
 import api from '../services/api'
 import { formatCurrency, formatNumberInput, parseNumberInput } from '../utils/format'
 
@@ -7,6 +8,7 @@ const emptyForm = { first_name: '', last_name: '', phone: '', total_debt: '', no
 
 const AdminDebtorsPage = () => {
   const [debtors, setDebtors] = useState<any[]>([])
+  const [search, setSearch] = useState<string>('')
   const [form, setForm] = useState(emptyForm)
   const [editForm, setEditForm] = useState(emptyForm)
   const [message, setMessage] = useState('')
@@ -17,13 +19,18 @@ const AdminDebtorsPage = () => {
   const [loadingHistory, setLoadingHistory] = useState(false)
 
   const load = async () => {
-    const data = await api.fetchAllDebtors()
+    const data = await api.fetchAllDebtors(search || undefined)
     setDebtors(data)
   }
 
   useEffect(() => {
     load().catch(console.error)
   }, [])
+
+  useEffect(() => {
+    const t = setTimeout(() => load().catch(console.error), 250)
+    return () => clearTimeout(t)
+  }, [search])
 
   const createDebtor = async () => {
     setError('')
@@ -126,6 +133,9 @@ const AdminDebtorsPage = () => {
         <section className="rounded-3xl bg-white p-6 shadow-soft dark:bg-slate-900">
           <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Qarzdorlar ro'yxati</h3>
           <div className="mt-6 overflow-x-auto">
+            <div className="mb-4 flex items-center gap-3">
+              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Ism, telefon bo'yicha izlash" className={`${inputClass} max-w-sm`} />
+            </div>
             <table className="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-slate-700">
               <thead className="bg-slate-50 dark:bg-slate-800">
                 <tr>
@@ -141,13 +151,19 @@ const AdminDebtorsPage = () => {
                   <tr key={debtor.id} className="text-slate-700 dark:text-slate-200">
                     <td className="px-4 py-4"><button onClick={() => openDebtorDetails(debtor)} className="font-semibold text-sky-600 hover:text-sky-500 hover:underline dark:text-sky-300">{debtor.full_name}</button></td>
                     <td className="px-4 py-4">{debtor.phone}</td>
-                    <td className="px-4 py-4">{formatCurrency(Number(debtor.total_debt))}</td>
+                    <td className="px-4 py-4"><span className={`inline-block rounded-full px-3 py-1 text-sm font-semibold ${Number(debtor.total_debt) > 0 ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-200' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200'}`}>{formatCurrency(Number(debtor.total_debt))}</span></td>
                     <td className="max-w-xs truncate px-4 py-4 text-slate-500 dark:text-slate-400">{debtor.note || '-'}</td>
                     <td className="px-4 py-4">
-                      <div className="flex gap-2">
-                        <button onClick={() => startEdit(debtor)} className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-800">Tahrirlash</button>
-                        <button onClick={() => deleteDebtor(debtor.id)} className="rounded-2xl bg-rose-500 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-400">Arxiv</button>
-                      </div>
+                        <button onClick={() => startEdit(debtor)} title="Tahrirlash" className="rounded-full border border-slate-300 bg-white p-2 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-800">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </svg>
+                        </button>
+                        <button onClick={() => deleteDebtor(debtor.id)} title="Arxiv" className="rounded-full bg-rose-500 p-2 text-white hover:bg-rose-400">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1H10a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
                     </td>
                   </tr>
                 ))}
@@ -168,8 +184,10 @@ const AdminDebtorsPage = () => {
                 <textarea value={editForm.note} onChange={(e) => setEditForm((p) => ({ ...p, note: e.target.value }))} className={`${inputClass} md:col-span-2`} placeholder="Izoh" />
               </div>
               <div className="mt-6 flex justify-end gap-3">
-                <button onClick={() => setEditingDebtor(null)} className="rounded-2xl border border-slate-300 px-5 py-3 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">Bekor qilish</button>
-                <button onClick={saveEdit} className="rounded-2xl bg-sky-600 px-5 py-3 text-sm font-semibold text-white hover:bg-sky-500">Saqlash</button>
+                <div className="flex gap-2">
+                  <button onClick={() => setEditingDebtor(null)} className="rounded-2xl border border-slate-300 px-5 py-3 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">Bekor qilish</button>
+                  <button onClick={saveEdit} className="rounded-2xl bg-sky-600 px-5 py-3 text-sm font-semibold text-white hover:bg-sky-500">Saqlash</button>
+                </div>
               </div>
             </div>
           </div>

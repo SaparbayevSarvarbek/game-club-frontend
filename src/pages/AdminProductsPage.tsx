@@ -96,8 +96,16 @@ const AdminProductsPage = () => {
                   <p className="text-sm text-slate-500 dark:text-slate-400">Qolgan: <span className="font-medium">{product.quantity ?? 0} dona</span> | Sotish: <span className="font-semibold text-blue-600 dark:text-blue-300">{formatCurrency(Number(product.price))}</span> | Tan narx: {formatCurrency(Number(product.cost_price ?? 0))}</p>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => startEdit(product)} className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">Tahrirlash</button>
-                  <button onClick={() => remove(product.id)} className="rounded-2xl bg-rose-500 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-400">O'chirish</button>
+                  <button onClick={() => startEdit(product)} title="Tahrirlash" className="rounded-full border border-slate-300 bg-white p-2 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-800">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                  </button>
+                  <button onClick={() => remove(product.id)} title="O'chirish" className="rounded-full bg-rose-500 p-2 text-white hover:bg-rose-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1H10a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
                 </div>
               </div>
             ))}

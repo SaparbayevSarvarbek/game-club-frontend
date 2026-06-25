@@ -102,32 +102,52 @@ const AdminSalesPage = () => {
             <table className="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-slate-700">
               <thead className="bg-slate-50 dark:bg-slate-800">
                 <tr>
-                  {['Mahsulot', 'Narx', 'Soni', 'Jami', 'Sana', 'Vaqt', 'Manba', 'Operator'].map((title) => (
+                  {['Mahsulot', 'Unit', 'Tan narxi', 'Soni', 'Jami', 'Foyda', 'Sana', 'Vaqt', 'Manba', 'Operator'].map((title) => (
                     <th key={title} className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-200">{title}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 bg-white dark:divide-slate-700 dark:bg-slate-900">
                 {loading ? (
-                  <tr><td colSpan={8} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">Yuklanmoqda...</td></tr>
+                  <tr><td colSpan={10} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">Yuklanmoqda...</td></tr>
                 ) : sales.length === 0 ? (
-                  <tr><td colSpan={8} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">Sotuvlar topilmadi.</td></tr>
-                ) : sales.map((sale) => {
-                  const created = sale.created_at ? new Date(sale.created_at) : null
-                  const unitPrice = Number(sale.unit_price ?? 0) || Number(sale.total_amount || 0) / Math.max(1, Number(sale.quantity || 1))
-                  return (
-                    <tr key={sale.sale_key ?? sale.id} className="text-slate-700 dark:text-slate-200">
-                      <td className="px-4 py-4 font-semibold text-slate-900 dark:text-slate-100">{sale.product_name ?? `Mahsulot #${sale.product_id}`}</td>
-                      <td className="px-4 py-4">{formatCurrency(unitPrice)}</td>
-                      <td className="px-4 py-4">{sale.quantity} ta</td>
-                      <td className="px-4 py-4 font-semibold">{formatCurrency(Number(sale.total_amount))}</td>
-                      <td className="px-4 py-4">{created ? created.toLocaleDateString('uz-UZ') : '-'}</td>
-                      <td className="px-4 py-4">{created ? created.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
-                      <td className="px-4 py-4">{sale.computer_number ? `Stol #${sale.computer_number}` : 'Alohida sotuv'}</td>
-                      <td className="px-4 py-4">{sale.operator_name ?? '-'}</td>
-                    </tr>
-                  )
-                })}
+                  <tr><td colSpan={10} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">Sotuvlar topilmadi.</td></tr>
+                ) : (
+                  <>
+                    {sales.map((sale) => {
+                      const created = sale.created_at ? new Date(sale.created_at) : null
+                      const unitPrice = Number(sale.unit_price ?? 0) || Number(sale.total_amount || 0) / Math.max(1, Number(sale.quantity || 1))
+                      return (
+                        <tr key={sale.sale_key ?? sale.id} className="text-slate-700 dark:text-slate-200">
+                          <td className="px-4 py-4 font-semibold text-slate-900 dark:text-slate-100">{sale.product_name ?? `Mahsulot #${sale.product_id}`}</td>
+                          <td className="px-4 py-4">{formatCurrency(unitPrice)}</td>
+                          <td className="px-4 py-4">{formatCurrency(Number(sale.cost_price || 0))}</td>
+                          <td className="px-4 py-4">{sale.quantity} ta</td>
+                          <td className="px-4 py-4 font-semibold">{formatCurrency(Number(sale.total_amount))}</td>
+                          <td className="px-4 py-4 font-semibold text-emerald-700">{formatCurrency(Number(sale.profit || 0))}</td>
+                          <td className="px-4 py-4">{created ? created.toLocaleDateString('uz-UZ') : '-'}</td>
+                          <td className="px-4 py-4">{created ? created.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
+                          <td className="px-4 py-4">{sale.computer_number ? `Stol #${sale.computer_number}` : 'Alohida sotuv'}</td>
+                          <td className="px-4 py-4">{sale.operator_name ?? '-'}</td>
+                        </tr>
+                      )
+                    })}
+                    {sales.length > 0 && (
+                      <tr className="font-semibold text-slate-900 dark:text-slate-100">
+                        <td className="px-4 py-4">Jami</td>
+                        <td className="px-4 py-4">-</td>
+                        <td className="px-4 py-4">{formatCurrency(sales.reduce((s, r) => s + Number(r.cost_price || 0) * Number(r.quantity || 0), 0))}</td>
+                        <td className="px-4 py-4">{quantity} ta</td>
+                        <td className="px-4 py-4">{formatCurrency(total)}</td>
+                        <td className="px-4 py-4">{formatCurrency(sales.reduce((s, r) => s + Number(r.profit || 0), 0))}</td>
+                        <td className="px-4 py-4">-</td>
+                        <td className="px-4 py-4">-</td>
+                        <td className="px-4 py-4">-</td>
+                        <td className="px-4 py-4">-</td>
+                      </tr>
+                    )}
+                  </>
+                )}
               </tbody>
             </table>
           </div>

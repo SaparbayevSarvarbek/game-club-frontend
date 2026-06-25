@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import Layout from '../components/common/Layout'
+import IconButton from '../components/common/IconButton'
 import api from '../services/api'
 import { FetchProductSale } from '../types'
 import { formatCurrency } from '../utils/format'
@@ -15,7 +16,7 @@ const AdminDashboardPage = () => {
   const [tab, setTab] = useState<Tab>('daily')
   const [sales, setSales] = useState<FetchProductSale[]>([])
   const [debts, setDebts] = useState<any[]>([])
-  const [drawer, setDrawer] = useState<'products' | 'debts' | null>(null)
+  const [drawer, setDrawer] = useState<'products' | 'debts' | 'income' | null>(null)
   const inputValue = tab === 'monthly' ? date.slice(0, 7) : date
   const inputType = tab === 'daily' ? 'date' : tab === 'monthly' ? 'month' : 'number'
   const detailDate = tab === 'daily' ? startDate : today
@@ -28,14 +29,22 @@ const AdminDashboardPage = () => {
   }, [tab, date, startDate, endDate])
 
   useEffect(() => {
+    const year = Number(date.slice(0, 4))
+    const month = Number(date.slice(5, 7))
+    const params = tab === 'daily'
+      ? { start_date: startDate, end_date: endDate, limit: 200 }
+      : tab === 'monthly'
+        ? { month: `${year}-${String(month).padStart(2, '0')}`, limit: 200 }
+        : { year, limit: 200 }
+
     Promise.all([
-      api.fetchProductSales({ date: detailDate, limit: 200 }),
-      api.fetchDebtTransactions({ date: detailDate, limit: 200 }),
+      api.fetchProductSales(params),
+      api.fetchDebtTransactions(params),
     ]).then(([saleData, debtData]) => {
       setSales(saleData)
       setDebts(debtData)
     }).catch(console.error)
-  }, [detailDate])
+  }, [tab, date, startDate, endDate])
 
   const productsTotal = useMemo(() => sales.reduce((sum, sale) => sum + Number(sale.total_amount || 0), 0), [sales])
   const productsCost = useMemo(() => sales.reduce((sum, sale) => sum + Number(sale.cost_price || 0) * Number(sale.quantity || 0), 0), [sales])
@@ -64,12 +73,18 @@ const AdminDashboardPage = () => {
   const borrowedDebts = debts.filter((debt) => Number(debt.amount) > 0)
   const paidDebts = debts.filter((debt) => Number(debt.amount) < 0)
 
+  const incomeCash = (statistics?.total_cash ?? 0)
+  const incomeCard = (statistics?.total_card ?? 0)
+  const incomeTotal = Number(incomeCash) + Number(incomeCard)
+
   const cards = [
-    { label: 'Daromad', value: statistics?.total_revenue, tone: 'from-emerald-500 to-teal-600 dark:from-emerald-950 dark:to-teal-950' },
-    { label: 'Xarajat', value: statistics?.total_expenses, tone: 'from-orange-500 to-rose-600 dark:from-orange-950 dark:to-rose-950' },
-    { label: 'Foyda', value: statistics?.products_profit ?? productsProfit, tone: 'from-lime-500 to-green-700 dark:from-lime-950 dark:to-green-950' },
-    { label: 'Sotilgan mahsulotlar', value: statistics?.products_revenue ?? productsTotal, tone: 'from-blue-500 to-cyan-700 dark:from-blue-950 dark:to-cyan-950', onClick: () => setDrawer('products') },
-    { label: 'Qarzdorlik', value: statistics?.total_debt ?? debtsTotal, tone: 'from-rose-500 to-pink-700 dark:from-rose-950 dark:to-pink-950', onClick: () => setDrawer('debts') },
+    { label: 'Daromad', value: incomeTotal, tone: 'from-amber-500 to-orange-600 dark:from-amber-950 dark:to-orange-950', onClick: () => setDrawer('income') },
+    { label: 'Naqd', value: statistics?.total_cash ?? 0, tone: 'from-emerald-500 to-teal-600 dark:from-emerald-950 dark:to-teal-950' },
+    { label: 'Karta', value: statistics?.total_card ?? 0, tone: 'from-sky-500 to-cyan-600 dark:from-sky-950 dark:to-cyan-950' },
+    { label: 'Qarz', value: statistics?.total_debt ?? 0, tone: 'from-rose-500 to-pink-700 dark:from-rose-950 dark:to-pink-950', onClick: () => setDrawer('debts') },
+    { label: 'PlayStation', value: statistics?.category_totals?.playstation ?? 0, tone: 'from-violet-500 to-indigo-600 dark:from-violet-950 dark:to-indigo-950' },
+    { label: 'Sotilgan mahsulotlar', value: statistics?.products_revenue ?? 0, tone: 'from-blue-500 to-cyan-700 dark:from-blue-950 dark:to-cyan-950', onClick: () => setDrawer('products') },
+    { label: "Bugungi chegirma", value: statistics?.total_discount ?? 0, tone: 'from-orange-500 to-rose-600 dark:from-orange-950 dark:to-rose-950' },
   ]
 
   const inputClass = 'mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100'
@@ -104,7 +119,7 @@ const AdminDashboardPage = () => {
             )}
           </div>
         </section>
-
+ 
         <section className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
           {cards.map((card) => {
             const content = (
@@ -122,29 +137,59 @@ const AdminDashboardPage = () => {
           })}
         </section>
       </div>
-
+ 
       {drawer && <button className="fixed inset-0 z-40 bg-slate-950/50" onClick={() => setDrawer(null)} />}
       {drawer === 'products' && (
-        <aside className="fixed right-0 top-0 z-50 flex h-screen w-full max-w-xl flex-col bg-white shadow-2xl dark:bg-slate-950">
+        <aside className="fixed right-0 top-0 z-50 flex h-screen w-full max-w-xl flex-col bg-white shadow-2xl dark:bg-slate-950 animate-slide-in">
           <div className="shrink-0 border-b border-slate-200 p-6 dark:border-slate-800">
             <div className="flex items-start justify-between gap-4">
-              <div><h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Sotilgan mahsulotlar</h3><p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Bir xil mahsulotlar birlashtirilgan</p></div>
-              <button onClick={() => setDrawer(null)} className="rounded-2xl border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white">Yopish</button>
+              <div>
+                <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Sotilgan mahsulotlar</h3>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Bir xil mahsulotlar birlashtirilgan</p>
+              </div>
+              <button onClick={() => setDrawer(null)} className="rounded-2xl border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto p-6">
-            <div className="space-y-3">
-              {groupedSales.length === 0 ? <p className="text-sm text-slate-500 dark:text-slate-400">Sotuvlar topilmadi.</p> : groupedSales.map((item) => (
-                <div key={item.name} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-                  <p className="font-semibold text-slate-900 dark:text-slate-100">{item.name}</p>
-                  <div className="mt-3 grid gap-2 text-sm text-slate-600 dark:text-slate-300 sm:grid-cols-2">
-                    <p>Sotilgan soni: {item.quantity} ta</p>
-                    <p>Sotish narxi: {formatCurrency(item.unitPrice)}</p>
-                    <p>Umumiy tan narx: {formatCurrency(item.costTotal)}</p>
-                    <p>Umumiy sotilgan summa: {formatCurrency(item.soldTotal)}</p>
+            <div className="space-y-4">
+              {groupedSales.length === 0 ? (
+                <p className="text-sm text-slate-500 dark:text-slate-400">Sotuvlar topilmadi.</p>
+              ) : (
+                groupedSales.map((item) => (
+                  <div key={item.name} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+                    <div className="flex justify-between items-start">
+                      <p className="font-semibold text-slate-900 dark:text-slate-100 text-base">{item.name}</p>
+                      <span className="bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 text-xs px-2.5 py-0.5 rounded-full font-medium">
+                        {item.quantity} ta
+                      </span>
+                    </div>
+                    <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                      <div>
+                        <p className="text-slate-400 font-medium">Sotish narxi (Dona)</p>
+                        <p className="text-slate-800 dark:text-slate-200 font-semibold mt-0.5">{formatCurrency(item.unitPrice)}</p>
+                      </div>
+                      <div>
+                        <p className="text-slate-400 font-medium">Tan narxi (Dona)</p>
+                        <p className="text-slate-500 dark:text-slate-400 font-semibold mt-0.5">{formatCurrency(item.costTotal / item.quantity)}</p>
+                      </div>
+                      <div className="border-t border-slate-200 dark:border-slate-800 pt-2 col-span-2 flex justify-between items-center mt-1">
+                        <div>
+                          <span className="text-slate-400 font-medium">Jami tushum</span>
+                          <p className="text-blue-600 dark:text-blue-400 font-bold text-sm mt-0.5">{formatCurrency(item.soldTotal)}</p>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-slate-400 font-medium">Sof foyda</span>
+                          <p className="text-emerald-600 dark:text-emerald-400 font-bold text-sm mt-0.5">{formatCurrency(item.soldTotal - item.costTotal)}</p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
           <div className="shrink-0 border-t border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-950">
@@ -156,18 +201,74 @@ const AdminDashboardPage = () => {
             </div>
           </div>
         </aside>
+      )}      {drawer === 'income' && (
+        <aside className="fixed right-0 top-0 z-50 h-screen w-full max-w-md overflow-y-auto bg-white p-6 shadow-2xl dark:bg-slate-950">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Daromad tafsiloti</h3>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Naqd va karta bo'limi</p>
+            </div>
+            <button onClick={() => setDrawer(null)} className="rounded-full bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">Yopish</button>
+          </div>
+          <div className="mt-6 space-y-4">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+              <p className="text-sm text-slate-500 dark:text-slate-400">Naqd</p>
+              <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(Number(incomeCash))}</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+              <p className="text-sm text-slate-500 dark:text-slate-400">Karta</p>
+              <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(Number(incomeCard))}</p>
+            </div>
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/60 dark:bg-amber-950/40">
+              <p className="text-sm text-amber-600 dark:text-amber-300">Umumiy daromad</p>
+              <p className="mt-2 text-2xl font-semibold text-amber-900 dark:text-amber-100">{formatCurrency(Number(incomeTotal))}</p>
+            </div>
+          </div>
+        </aside>
       )}      {drawer === 'debts' && (
         <aside className="fixed right-0 top-0 z-50 h-screen w-full max-w-md overflow-y-auto bg-white p-6 shadow-2xl dark:bg-slate-950">
-          <div className="flex items-start justify-between gap-4"><div><h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Qarzdorlik tarixi</h3><p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Qarz olingan va to'langan operatsiyalar</p></div><button onClick={() => setDrawer(null)} className="rounded-2xl border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white">Yopish</button></div>
-          <div className="mt-5 space-y-6">
+          <div className="flex items-start justify-between gap-4">
             <div>
-              <h4 className="mb-3 font-semibold text-rose-700 dark:text-rose-200">Qarz olganlar</h4>
-              <div className="space-y-3">{borrowedDebts.length === 0 ? <p className="text-sm text-slate-500 dark:text-slate-400">Qarz yozuvlari yo'q.</p> : borrowedDebts.map((debt) => { const created = new Date(debt.created_at); return <div key={debt.id} className="rounded-2xl border border-rose-200 bg-rose-50 p-4 dark:border-rose-900/60 dark:bg-rose-950/40"><p className="font-semibold text-rose-800 dark:text-rose-100">{debt.debtor_name ?? `Qarzdor #${debt.debtor_id}`}</p><p className="mt-2 text-2xl font-bold text-rose-700 dark:text-rose-200">{formatCurrency(Math.abs(Number(debt.amount)))}</p><p className="mt-1 text-xs text-rose-600 dark:text-rose-300">{created.toLocaleDateString('uz-UZ')} | {created.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}</p></div> })}</div>
+              <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Qarzdorlik tarixi</h3>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Qarz olingan va to'langan operatsiyalar (oxirgilar yuqorida)</p>
             </div>
-            <div>
-              <h4 className="mb-3 font-semibold text-emerald-700 dark:text-emerald-200">Qarz to'laganlar</h4>
-              <div className="space-y-3">{paidDebts.length === 0 ? <p className="text-sm text-slate-500 dark:text-slate-400">To'lov yozuvlari yo'q.</p> : paidDebts.map((debt) => { const created = new Date(debt.created_at); return <div key={debt.id} className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/40"><p className="font-semibold text-emerald-800 dark:text-emerald-100">{debt.debtor_name ?? `Qarzdor #${debt.debtor_id}`}</p><p className="mt-2 text-2xl font-bold text-emerald-700 dark:text-emerald-200">{formatCurrency(Math.abs(Number(debt.amount)))}</p><p className="mt-1 text-xs text-emerald-600 dark:text-emerald-300">{created.toLocaleDateString('uz-UZ')} | {created.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}</p></div> })}</div>
-            </div>
+            <button onClick={() => setDrawer(null)} className="rounded-2xl border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div className="mt-5 space-y-3">
+            {debts.length === 0 ? (
+              <p className="text-sm text-slate-500 dark:text-slate-400">Operatsiyalar yo'q.</p>
+            ) : (
+              debts.map((debt) => {
+                const created = new Date(debt.created_at);
+                const isPaid = Number(debt.amount) < 0;
+                return (
+                  <div
+                    key={debt.id}
+                    className={`rounded-2xl border p-4 ${
+                      isPaid
+                        ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-900/60 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-100'
+                        : 'border-rose-200 bg-rose-50 dark:border-rose-900/60 dark:bg-rose-950/40 text-rose-900 dark:text-rose-100'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <p className="font-semibold text-base">{debt.debtor_name ?? `Qarzdor #${debt.debtor_id}`}</p>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${isPaid ? 'bg-emerald-200/60 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200' : 'bg-rose-200/60 text-rose-800 dark:bg-rose-900/60 dark:text-rose-200'}`}>
+                        {isPaid ? "To'ladi" : "Oldi"}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-2xl font-bold">{formatCurrency(Math.abs(Number(debt.amount)))}</p>
+                    {debt.note && <p className="mt-1 text-sm opacity-80">{debt.note}</p>}
+                    <p className="mt-2 text-xs opacity-65">
+                      {created.toLocaleDateString('uz-UZ')} | {created.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                );
+              })
+            )}
           </div>
         </aside>
       )}    </Layout>

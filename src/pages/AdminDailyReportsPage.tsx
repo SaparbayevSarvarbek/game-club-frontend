@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import Layout from '../components/common/Layout'
 import api from '../services/api'
 import { formatCurrency, formatDate } from '../utils/format'
+import IconButton from '../components/common/IconButton'
 
 const AdminDailyReportsPage = () => {
   const [reports, setReports] = useState<any[]>([])
@@ -128,10 +129,8 @@ const AdminDailyReportsPage = () => {
           </div>
         )}
         {activeImageUrl && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 p-4">
-            <button onClick={() => setActiveImageUrl(null)} className="absolute right-4 top-4 rounded-full bg-white dark:bg-slate-700 p-2 text-slate-900 dark:text-slate-100 shadow-soft">
-              Yopish
-            </button>
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 p-4">
+            <button onClick={() => setActiveImageUrl(null)} className="absolute right-4 top-4 rounded-2xl border border-slate-300 px-4 py-2 text-sm text-slate-700">Yopish</button>
             <img src={activeImageUrl} alt="Katta chek rasmi" className="max-h-[90vh] max-w-[90vw] rounded-3xl border border-white dark:border-slate-700 object-contain" />
           </div>
         )}
