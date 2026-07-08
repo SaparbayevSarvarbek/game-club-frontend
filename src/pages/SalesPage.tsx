@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react'
 import Layout from '../components/common/Layout'
 import api from '../services/api'
 import { FetchProduct, FetchProductSale } from '../types'
-import { formatCurrency } from '../utils/format'
+import { formatCurrency, formatNumberInput, parseNumberInput } from '../utils/format'
 
 const today = new Date().toISOString().slice(0, 10)
 
@@ -11,8 +11,8 @@ const SalesPage = () => {
   const [sales, setSales] = useState<FetchProductSale[]>([])
   const [selectedProduct, setSelectedProduct] = useState<number | null>(null)
   const [quantity, setQuantity] = useState(1)
-  const [cash, setCash] = useState<number>(0)
-  const [card, setCard] = useState<number>(0)
+  const [cash, setCash] = useState<string>('')
+  const [card, setCard] = useState<string>('')
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -37,12 +37,14 @@ const SalesPage = () => {
     setMessage('')
     setError('')
     if (!product) return setError('Mahsulotni tanlang.')
-    if (cash + card !== totalAmount) return setError("To'lov jami umumiy summaga teng bo'lishi kerak.")
+    const cashAmount = parseNumberInput(cash)
+    const cardAmount = parseNumberInput(card)
+    if (cashAmount + cardAmount !== totalAmount) return setError("To'lov jami umumiy summaga teng bo'lishi kerak.")
     try {
       setLoading(true)
-      await api.productSale({ product_id: selectedProduct, quantity, payment_cash: cash, payment_card: card })
+      await api.productSale({ product_id: selectedProduct, quantity, payment_cash: cashAmount, payment_card: cardAmount })
       setMessage('Mahsulot savdosi saqlandi')
-      setCash(0); setCard(0); setSelectedProduct(null); setQuantity(1)
+      setCash(''); setCard(''); setSelectedProduct(null); setQuantity(1)
       await load()
     } catch (err: any) {
       setError(err?.response?.data?.detail || 'Savdoni yaratishda xatolik.')
@@ -60,8 +62,30 @@ const SalesPage = () => {
           <form onSubmit={handleSubmit} className="mt-6 grid gap-4 md:grid-cols-2">
             <label className="block"><span className="text-sm text-slate-600 dark:text-slate-300">Mahsulot</span><select value={selectedProduct ?? ''} onChange={(e) => setSelectedProduct(Number(e.target.value))} className={inputClass} required><option value="" disabled>Mahsulotni tanlang</option>{products.filter((p) => (p.quantity ?? 0) > 0).map((item) => <option key={item.id} value={item.id}>{item.name} | {item.quantity} dona | {formatCurrency(item.price)}</option>)}</select></label>
             <label className="block"><span className="text-sm text-slate-600 dark:text-slate-300">Miqdori</span><input type="number" min={1} value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} className={inputClass} /></label>
-            <label className="block"><span className="text-sm text-slate-600 dark:text-slate-300">Naqd pul</span><input type="number" min={0} value={cash} onChange={(e) => setCash(Number(e.target.value))} className={inputClass} /></label>
-            <label className="block"><span className="text-sm text-slate-600 dark:text-slate-300">Karta</span><input type="number" min={0} value={card} onChange={(e) => setCard(Number(e.target.value))} className={inputClass} /></label>
+            <label className="block">
+              <span className="text-sm text-slate-600 dark:text-slate-300">Naqd pul</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9\s,]*"
+                value={cash}
+                onChange={(e) => setCash(formatNumberInput(e.target.value))}
+                className={inputClass}
+                placeholder="0"
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm text-slate-600 dark:text-slate-300">Karta</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9\s,]*"
+                value={card}
+                onChange={(e) => setCard(formatNumberInput(e.target.value))}
+                className={inputClass}
+                placeholder="0"
+              />
+            </label>
             <div className="rounded-3xl bg-blue-50 p-4 md:col-span-2 dark:bg-blue-950/40"><p className="text-sm text-blue-700 dark:text-blue-200">Jami</p><p className="mt-2 text-3xl font-semibold text-blue-800 dark:text-blue-100">{formatCurrency(totalAmount)}</p></div>
             <button type="submit" disabled={loading} className="rounded-2xl bg-sky-600 px-5 py-3 text-sm font-semibold text-white hover:bg-sky-500 md:col-span-2 disabled:opacity-60">Savdoni saqlash</button>
           </form>

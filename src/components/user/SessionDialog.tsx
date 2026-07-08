@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ArrowPathIcon, TrashIcon, ArrowUturnLeftIcon } from '@heroicons/react/24/outline'
 import api from '../../services/api'
 import { formatCurrency, formatNumberInput, parseNumberInput } from '../../utils/format'
@@ -102,9 +102,12 @@ const SessionDialog = ({ computer, products, close, onStart, onSave, onComplete,
   const [paymentCash, setPaymentCash] = useState('')
   const [paymentCard, setPaymentCard] = useState('')
   const [paymentDebt, setPaymentDebt] = useState('')
+  const [debtorSearch, setDebtorSearch] = useState('')
+  const [debtorDropdownOpen, setDebtorDropdownOpen] = useState(false)
   const [debtorId, setDebtorId] = useState<number | null>(null)
   const [debtors, setDebtors] = useState<any[]>([])
   const [error, setError] = useState<string>('')
+  const debtorDropdownRef = useRef<HTMLDivElement | null>(null)
   const [processing, setProcessing] = useState(false)
   const [showPayment, setShowPayment] = useState(false)
   const [localActiveSession, setLocalActiveSession] = useState<ActiveSession | null>(activeSession ?? null)
@@ -141,14 +144,33 @@ const SessionDialog = ({ computer, products, close, onStart, onSave, onComplete,
   useEffect(() => {
     const loadDebtors = async () => {
       try {
-        const data = await api.listDebtors()
+        const data = await api.listDebtors(debtorSearch || undefined, true)
         setDebtors(data)
       } catch {
         setDebtors([])
       }
     }
     loadDebtors()
-  }, [])
+  }, [debtorSearch])
+
+  useEffect(() => {
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (
+        debtorDropdownRef.current &&
+        !debtorDropdownRef.current.contains(event.target as Node)
+      ) {
+        setDebtorDropdownOpen(false)
+      }
+    }
+
+    if (debtorDropdownOpen) {
+      document.addEventListener('mousedown', handleOutsideClick)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick)
+    }
+  }, [debtorDropdownOpen])
 
   const addProduct = () => {
     if (products.length > 0) {
@@ -494,18 +516,44 @@ const SessionDialog = ({ computer, products, close, onStart, onSave, onComplete,
             {parseNumberInput(paymentDebt) > 0 && (
               <div className="mt-6 rounded-3xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-4">
                 <p className="text-sm text-slate-500 dark:text-slate-400">Qarzdor tanlang</p>
-                <select
-                  value={debtorId ?? ''}
-                  onChange={(e) => setDebtorId(e.target.value ? Number(e.target.value) : null)}
-                  className="mt-3 w-full rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-4 py-3"
-                >
-                  <option value="">Qarzdor tanlang</option>
-                  {debtors.map((debtor) => (
-                    <option key={debtor.id} value={debtor.id}>
-                      {debtor.first_name} {debtor.last_name} — {formatCurrency(Number(debtor.total_debt ?? 0))}
-                    </option>
-                  ))}
-                </select>
+                <div ref={debtorDropdownRef} className="mt-3 relative">
+                  <input
+                    type="text"
+                    value={debtorSearch}
+                    onChange={(e) => {
+                      setDebtorSearch(e.target.value)
+                      setDebtorId(null)
+                      setDebtorDropdownOpen(true)
+                    }}
+                    onFocus={() => setDebtorDropdownOpen(true)}
+                    placeholder="Ism yoki telefon bo‘yicha qidiring"
+                    className="w-full rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-4 py-3"
+                  />
+                  {debtorDropdownOpen && (
+                    <div className="absolute left-0 right-0 z-10 max-h-64 overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-950">
+                      {debtors.length === 0 ? (
+                        <div className="p-3 text-sm text-slate-500">Hech qanday qarzdor topilmadi.</div>
+                      ) : (
+                        debtors.map((debtor) => (
+                          <button
+                            key={debtor.id}
+                            type="button"
+                            onMouseDown={(event) => {
+                              event.preventDefault()
+                              setDebtorId(debtor.id)
+                              setDebtorSearch(`${debtor.first_name} ${debtor.last_name ?? ''}`.trim())
+                              setDebtorDropdownOpen(false)
+                            }}
+                            className="w-full px-4 py-3 text-left text-sm text-slate-900 hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-slate-800"
+                          >
+                            <div className="font-medium">{debtor.first_name} {debtor.last_name}</div>
+                            <div className="text-xs text-slate-500 dark:text-slate-400">{debtor.phone} — {formatCurrency(Number(debtor.total_debt ?? 0))}</div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
                 <div className="mt-4">
                   <DebtorInlineAdd setDebtors={setDebtors} setDebtorId={setDebtorId} />
                 </div>

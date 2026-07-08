@@ -2,7 +2,7 @@ import axios, { AxiosError } from 'axios'
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 
-const instance = axios.create({ baseURL: BASE_URL })
+const instance = axios.create({ baseURL: BASE_URL, timeout: 20000 })
 
 let token: string | null = null
 
@@ -17,6 +17,12 @@ instance.interceptors.request.use((config) => {
 instance.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
+    // Network / CORS errors will have no response
+    if (!error.response) {
+      // Let callers handle network errors — log for debugging
+      console.error('Network or CORS error in API request', error.message)
+      return Promise.reject(error)
+    }
     if (error.response?.status === 401) {
       window.localStorage.removeItem('gameclub_auth')
       window.location.href = '/login'
@@ -27,10 +33,16 @@ instance.interceptors.response.use(
 
 const setToken = (jwt: string) => {
   token = jwt
+  instance.defaults.headers = instance.defaults.headers ?? {}
+  instance.defaults.headers.common = instance.defaults.headers.common ?? {}
+  instance.defaults.headers.common.Authorization = `Bearer ${jwt}`
 }
 
 const clearToken = () => {
   token = null
+  if (instance.defaults.headers && instance.defaults.headers.common) {
+    delete instance.defaults.headers.common.Authorization
+  }
 }
 
 const login = async (username: string, password: string) => (await instance.post('/api/auth/login', { username, password })).data
@@ -98,7 +110,15 @@ const addProductsToSession = async (sessionId: number, payload: unknown) => (awa
 const deleteSessionProduct = async (sessionId: number, sessionProductId: number) => (await instance.delete(`/api/sessions/${sessionId}/products/${sessionProductId}`)).data
 const cancelSession = async (sessionId: number) => (await instance.delete(`/api/sessions/${sessionId}`)).data
 
-const listDebtors = async (search?: string) => (await instance.get('/api/debtors', { params: search ? { search } : {} })).data
+const listDebtors = async (search?: string, includeZeroDebt?: boolean) =>
+  (
+    await instance.get('/api/debtors', {
+      params: {
+        ...(search ? { search } : {}),
+        ...(includeZeroDebt ? { include_zero_debt: true } : {}),
+      },
+    })
+  ).data
 const createDebtor = async (payload: unknown) => (await instance.post('/api/debtors', payload as any)).data
 const payDebtor = async (id: number, payload: unknown) => (await instance.post(`/api/debtors/${id}/pay`, payload as any)).data
 const debtorHistory = async (id: number) => (await instance.get(`/api/debtors/${id}/history`)).data

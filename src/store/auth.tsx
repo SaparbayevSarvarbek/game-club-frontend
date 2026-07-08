@@ -41,6 +41,53 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setLoading(false)
   }, [])
 
+  // Handle updates from other tabs and visibility changes
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY) {
+        if (!e.newValue) {
+          // token removed in another tab -> logout here too
+          setUser(null)
+          setToken(null)
+          api.clearToken()
+        } else {
+          try {
+            const data = JSON.parse(e.newValue as string) as { token: string; user: User }
+            setUser(data.user)
+            setToken(data.token)
+            api.setToken(data.token)
+          } catch {
+            // ignore
+          }
+        }
+      }
+    }
+
+    const onVisibility = () => {
+      // When user returns to tab, ensure token from storage is synced
+      const storedNow = localStorage.getItem(STORAGE_KEY)
+      if (storedNow) {
+        try {
+          const data = JSON.parse(storedNow) as { token: string; user: User }
+          if (!token || token !== data.token) {
+            setUser(data.user)
+            setToken(data.token)
+            api.setToken(data.token)
+          }
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    window.addEventListener('storage', onStorage)
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      window.removeEventListener('storage', onStorage)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [token])
+
   const login = async (username: string, password: string) => {
     const result = await api.login(username, password)
     setToken(result.access_token)

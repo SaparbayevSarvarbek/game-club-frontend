@@ -113,12 +113,22 @@ const AdminDailyReportsPage = () => {
                   {selectedReport.image_url && (
                     <div className="rounded-3xl bg-slate-50 dark:bg-slate-700 p-4 border border-slate-200 dark:border-slate-700">
                       <p className="text-sm text-slate-500 dark:text-slate-400">Yuklangan chek rasmi</p>
-                      <img
-                        src={(import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace(/\/$/, '') + selectedReport.image_url}
-                        alt="Hisobot rasmi"
-                        onClick={() => setActiveImageUrl((import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace(/\/$/, '') + selectedReport.image_url)}
-                        className="mt-3 w-full cursor-pointer rounded-3xl border border-slate-200 dark:border-slate-700 object-contain transition hover:opacity-90 max-h-80"
-                      />
+                      <a
+                        href={(import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace(/\/$/, '') + selectedReport.image_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block mt-3"
+                      >
+                        <img
+                          src={(import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace(/\/$/, '') + selectedReport.image_url}
+                          alt="Hisobot rasmi"
+                          onClick={(event) => {
+                            event.preventDefault()
+                            setActiveImageUrl((import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace(/\/$/, '') + selectedReport.image_url)
+                          }}
+                          className="w-full cursor-pointer rounded-3xl border border-slate-200 dark:border-slate-700 object-contain transition hover:opacity-90 max-h-80"
+                        />
+                      </a>
                     </div>
                   )}
                 </div>
@@ -129,9 +139,9 @@ const AdminDailyReportsPage = () => {
           </div>
         )}
         {activeImageUrl && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 p-4">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 p-4" onClick={() => setActiveImageUrl(null)}>
             <button onClick={() => setActiveImageUrl(null)} className="absolute right-4 top-4 rounded-2xl border border-slate-300 px-4 py-2 text-sm text-slate-700">Yopish</button>
-            <img src={activeImageUrl} alt="Katta chek rasmi" className="max-h-[90vh] max-w-[90vw] rounded-3xl border border-white dark:border-slate-700 object-contain" />
+            <img src={activeImageUrl} alt="Katta chek rasmi" className="max-h-[90vh] max-w-[90vw] rounded-3xl border border-white dark:border-slate-700 object-contain" onClick={(event) => event.stopPropagation()} />
           </div>
         )}
       </div>
