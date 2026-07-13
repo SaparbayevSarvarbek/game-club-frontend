@@ -4,12 +4,20 @@ import api from '../services/api'
 import { formatCurrency, formatDate } from '../utils/format'
 import IconButton from '../components/common/IconButton'
 
+const BASE_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace(/\/$/, '')
+
 const AdminDailyReportsPage = () => {
   const [reports, setReports] = useState<any[]>([])
   const [selectedReport, setSelectedReport] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [activeImageUrl, setActiveImageUrl] = useState<string | null>(null)
+
+  const getFullImageUrl = (path: string) => {
+    if (!path) return ''
+    if (path.startsWith('http://') || path.startsWith('https://')) return path
+    return `${BASE_URL}${path.startsWith('/') ? '' : '/'}${path}`
+  }
 
   useEffect(() => {
     const loadReports = async () => {
@@ -114,17 +122,17 @@ const AdminDailyReportsPage = () => {
                     <div className="rounded-3xl bg-slate-50 dark:bg-slate-700 p-4 border border-slate-200 dark:border-slate-700">
                       <p className="text-sm text-slate-500 dark:text-slate-400">Yuklangan chek rasmi</p>
                       <a
-                        href={(import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace(/\/$/, '') + selectedReport.image_url}
+                        href={getFullImageUrl(selectedReport.image_url)}
                         target="_blank"
                         rel="noreferrer"
                         className="block mt-3"
                       >
                         <img
-                          src={(import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace(/\/$/, '') + selectedReport.image_url}
+                          src={getFullImageUrl(selectedReport.image_url)}
                           alt="Hisobot rasmi"
                           onClick={(event) => {
                             event.preventDefault()
-                            setActiveImageUrl((import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace(/\/$/, '') + selectedReport.image_url)
+                            setActiveImageUrl(getFullImageUrl(selectedReport.image_url))
                           }}
                           className="w-full cursor-pointer rounded-3xl border border-slate-200 dark:border-slate-700 object-contain transition hover:opacity-90 max-h-80"
                         />

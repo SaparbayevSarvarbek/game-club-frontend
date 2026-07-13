@@ -70,14 +70,43 @@ const AdminDebtorsPage = () => {
     if (!editingDebtor) return
     setError('')
     setMessage('')
+    
+    // Validation
+    const firstName = editForm.first_name.trim()
+    const phone = editForm.phone.trim()
+    
+    if (!firstName) {
+      setError('Ism kiritish majburiy')
+      return
+    }
+    if (!phone) {
+      setError('Telefon kiritish majburiy')
+      return
+    }
+    
     try {
-      await api.updateAdminDebtor(editingDebtor.id, {
-        first_name: editForm.first_name.trim(),
-        last_name: editForm.last_name.trim(),
-        phone: editForm.phone.trim(),
-        total_debt: parseNumberInput(editForm.total_debt),
-        note: editForm.note.trim() || null,
-      })
+      const payload: any = {
+        first_name: firstName,
+        phone: phone,
+      }
+      
+      // Only include optional fields if they have values
+      const lastName = editForm.last_name.trim()
+      if (lastName) {
+        payload.last_name = lastName
+      }
+      
+      const totalDebt = parseNumberInput(editForm.total_debt)
+      if (totalDebt > 0) {
+        payload.total_debt = totalDebt
+      }
+      
+      const note = editForm.note.trim()
+      if (note) {
+        payload.note = note
+      }
+      
+      await api.updateAdminDebtor(editingDebtor.id, payload)
       setEditingDebtor(null)
       setMessage('Qarzdor ma\'lumotlari yangilandi')
       await load()
