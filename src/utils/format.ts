@@ -57,7 +57,7 @@ export const formatDate = (value: string | Date) => {
 export const formatNumberInput = (value: string | number) => {
   const raw = typeof value === 'number' ? String(value) : value
   const cleaned = raw.replace(/\s|,/g, '').trim()
-  if (cleaned === '' || Number.isNaN(Number(cleaned)) || Number(cleaned) === 0) {
+  if (cleaned === '' || Number.isNaN(Number(cleaned))) {
     return ''
   }
   return new Intl.NumberFormat('uz-UZ').format(Number(cleaned))
