@@ -3,6 +3,7 @@ import Layout from '../components/common/Layout'
 import api from '../services/api'
 import { formatCurrency, formatDate } from '../utils/format'
 import IconButton from '../components/common/IconButton'
+import { useToast } from '../components/common/Toast'
 
 const BASE_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace(/\/$/, '')
 
@@ -10,8 +11,8 @@ const AdminDailyReportsPage = () => {
   const [reports, setReports] = useState<any[]>([])
   const [selectedReport, setSelectedReport] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
   const [activeImageUrl, setActiveImageUrl] = useState<string | null>(null)
+  const toast = useToast()
 
   const getFullImageUrl = (path: string) => {
     if (!path) return ''
@@ -22,12 +23,11 @@ const AdminDailyReportsPage = () => {
   useEffect(() => {
     const loadReports = async () => {
       setLoading(true)
-      setError('')
       try {
         const data = await api.fetchDailyReports()
         setReports(data)
       } catch (err: any) {
-        setError(err?.response?.data?.detail || 'Kunlik hisobotlarni yuklashda xatolik yuz berdi.')
+        toast.error(err?.response?.data?.detail || 'Kunlik hisobotlarni yuklashda xatolik yuz berdi.')
       } finally {
         setLoading(false)
       }
@@ -54,10 +54,6 @@ const AdminDailyReportsPage = () => {
         {loading ? (
           <section className="rounded-3xl bg-white dark:bg-slate-800 p-6 shadow-soft">
             <p className="text-sm text-slate-500 dark:text-slate-400">Hisobotlar yuklanmoqda...</p>
-          </section>
-        ) : error ? (
-          <section className="rounded-3xl bg-white dark:bg-slate-800 p-6 shadow-soft">
-            <p className="text-sm text-rose-600">{error}</p>
           </section>
         ) : (
           <div className="grid gap-6 xl:grid-cols-[1.2fr_minmax(360px,1fr)]">

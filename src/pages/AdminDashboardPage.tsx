@@ -17,6 +17,7 @@ const AdminDashboardPage = () => {
   const [sales, setSales] = useState<FetchProductSale[]>([])
   const [debts, setDebts] = useState<any[]>([])
   const [drawer, setDrawer] = useState<'products' | 'debts' | 'income' | null>(null)
+  const [debtFilter, setDebtFilter] = useState<'all' | 'borrowed' | 'paid'>('all')
   const inputValue = tab === 'monthly' ? date.slice(0, 7) : date
   const inputType = tab === 'daily' ? 'date' : tab === 'monthly' ? 'month' : 'number'
   const detailDate = tab === 'daily' ? startDate : today
@@ -72,6 +73,10 @@ const AdminDashboardPage = () => {
   const debtsTotal = useMemo(() => debts.reduce((sum, debt) => sum + Number(debt.amount || 0), 0), [debts])
   const borrowedDebts = debts.filter((debt) => Number(debt.amount) > 0)
   const paidDebts = debts.filter((debt) => Number(debt.amount) < 0)
+  const borrowedTotal = useMemo(() => borrowedDebts.reduce((sum, debt) => sum + Number(debt.amount || 0), 0), [borrowedDebts])
+  const paidTotal = useMemo(() => Math.abs(paidDebts.reduce((sum, debt) => sum + Number(debt.amount || 0), 0)), [paidDebts])
+  const debtorCount = useMemo(() => new Set(debts.map((d) => d.debtor_id)).size, [debts])
+  const visibleDebts = debtFilter === 'all' ? debts : debtFilter === 'borrowed' ? borrowedDebts : paidDebts
 
   const incomeCash = (statistics?.total_cash ?? 0)
   const incomeCard = (statistics?.total_card ?? 0)
@@ -81,7 +86,7 @@ const AdminDashboardPage = () => {
     { label: 'Daromad', value: incomeTotal, tone: 'from-amber-500 to-orange-600 dark:from-amber-950 dark:to-orange-950', onClick: () => setDrawer('income') },
     { label: 'Naqd', value: statistics?.total_cash ?? 0, tone: 'from-emerald-500 to-teal-600 dark:from-emerald-950 dark:to-teal-950' },
     { label: 'Karta', value: statistics?.total_card ?? 0, tone: 'from-sky-500 to-cyan-600 dark:from-sky-950 dark:to-cyan-950' },
-    { label: 'Qarz', value: statistics?.total_debt ?? 0, tone: 'from-rose-500 to-pink-700 dark:from-rose-950 dark:to-pink-950', onClick: () => setDrawer('debts') },
+    { label: 'Qarz', value: statistics?.total_debt ?? 0, tone: 'from-rose-500 to-pink-700 dark:from-rose-950 dark:to-pink-950', onClick: () => { setDebtFilter('all'); setDrawer('debts') } },
     { label: 'PlayStation', value: statistics?.category_totals?.playstation ?? 0, tone: 'from-violet-500 to-indigo-600 dark:from-violet-950 dark:to-indigo-950' },
     { label: 'Sotilgan mahsulotlar', value: statistics?.products_revenue ?? 0, tone: 'from-blue-500 to-cyan-700 dark:from-blue-950 dark:to-cyan-950', onClick: () => setDrawer('products') },
     { label: "Bugungi chegirma", value: statistics?.total_discount ?? 0, tone: 'from-orange-500 to-rose-600 dark:from-orange-950 dark:to-rose-950' },
@@ -226,23 +231,69 @@ const AdminDashboardPage = () => {
           </div>
         </aside>
       )}      {drawer === 'debts' && (
-        <aside className="fixed right-0 top-0 z-50 h-screen w-full max-w-md overflow-y-auto bg-white p-6 shadow-2xl dark:bg-slate-950">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Qarzdorlik tarixi</h3>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Qarz olingan va to'langan operatsiyalar (oxirgilar yuqorida)</p>
+        <aside className="fixed right-0 top-0 z-50 flex h-screen w-full max-w-md flex-col bg-white shadow-2xl dark:bg-slate-950 animate-slide-in">
+          <div className="shrink-0 border-b border-slate-200 p-6 dark:border-slate-800">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Qarz tafsiloti</h3>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Tanlangan davr bo'yicha qarz olingan va to'langan summalar</p>
+              </div>
+              <button onClick={() => setDrawer(null)} className="rounded-2xl border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
-            <button onClick={() => setDrawer(null)} className="rounded-2xl border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setDebtFilter((prev) => (prev === 'borrowed' ? 'all' : 'borrowed'))}
+                className={`rounded-2xl border p-4 text-left transition-colors duration-150 ${debtFilter === 'borrowed' ? 'border-rose-400 bg-rose-100 ring-2 ring-rose-300 dark:border-rose-500 dark:bg-rose-900/60' : 'border-rose-200 bg-rose-50 hover:bg-rose-100 dark:border-rose-900/60 dark:bg-rose-950/40'}`}
+              >
+                <p className="text-xs font-medium uppercase tracking-[0.14em] text-rose-600 dark:text-rose-300">Qarz olingan</p>
+                <p className="mt-2 break-words text-2xl font-bold leading-tight text-rose-800 dark:text-rose-100">{formatCurrency(borrowedTotal)}</p>
+                <p className="mt-1 text-xs text-rose-500 dark:text-rose-400">{borrowedDebts.length} ta operatsiya</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => setDebtFilter((prev) => (prev === 'paid' ? 'all' : 'paid'))}
+                className={`rounded-2xl border p-4 text-left transition-colors duration-150 ${debtFilter === 'paid' ? 'border-emerald-400 bg-emerald-100 ring-2 ring-emerald-300 dark:border-emerald-500 dark:bg-emerald-900/60' : 'border-emerald-200 bg-emerald-50 hover:bg-emerald-100 dark:border-emerald-900/60 dark:bg-emerald-950/40'}`}
+              >
+                <p className="text-xs font-medium uppercase tracking-[0.14em] text-emerald-600 dark:text-emerald-300">Qarz to'langan</p>
+                <p className="mt-2 break-words text-2xl font-bold leading-tight text-emerald-800 dark:text-emerald-100">{formatCurrency(paidTotal)}</p>
+                <p className="mt-1 text-xs text-emerald-500 dark:text-emerald-400">{paidDebts.length} ta operatsiya</p>
+              </button>
+            </div>
+
+            <div className="mt-3 flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-slate-700 dark:bg-slate-800">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                {debtFilter === 'all' ? 'Barcha operatsiyalar' : debtFilter === 'borrowed' ? 'Faqat qarz olinganlar' : 'Faqat qarz to\'langanlar'}
+              </p>
+              {debtFilter !== 'all' && (
+                <button type="button" onClick={() => setDebtFilter('all')} className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600">
+                  Hammasi
+                </button>
+              )}
+            </div>
+
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800">
+                <p className="text-sm text-slate-500 dark:text-slate-400">Sof qarz</p>
+                <p className="text-lg font-bold text-slate-900 dark:text-slate-100">{formatCurrency(debtsTotal)}</p>
+              </div>
+              <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800">
+                <p className="text-sm text-slate-500 dark:text-slate-400">Qarzdorlar</p>
+                <p className="text-lg font-bold text-slate-900 dark:text-slate-100">{debtorCount} kishi</p>
+              </div>
+            </div>
           </div>
-          <div className="mt-5 space-y-3">
-            {debts.length === 0 ? (
-              <p className="text-sm text-slate-500 dark:text-slate-400">Operatsiyalar yo'q.</p>
+
+          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-6">
+            {visibleDebts.length === 0 ? (
+              <p className="text-sm text-slate-500 dark:text-slate-400">Bu davrda operatsiyalar yo'q.</p>
             ) : (
-              debts.map((debt) => {
+              visibleDebts.map((debt) => {
                 const created = new Date(debt.created_at);
                 const isPaid = Number(debt.amount) < 0;
                 return (

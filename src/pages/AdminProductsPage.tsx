@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import Layout from '../components/common/Layout'
+import { useToast } from '../components/common/Toast'
 import api from '../services/api'
 import { formatCurrency, formatNumberInput, parseNumberInput } from '../utils/format'
 
@@ -10,7 +11,7 @@ const AdminProductsPage = () => {
   const [quantity, setQuantity] = useState('0')
   const [purchaseTotal, setPurchaseTotal] = useState('')
   const [editing, setEditing] = useState<any>(null)
-  const [message, setMessage] = useState('')
+  const toast = useToast()
 
   const load = async () => setProducts(await api.fetchProducts())
 
@@ -25,15 +26,14 @@ const AdminProductsPage = () => {
   }, [quantity, purchaseTotal])
 
   const handleSave = async () => {
-    setMessage('')
     try {
       const numericPrice = parseNumberInput(price)
       const numericQuantity = parseNumberInput(quantity)
       const numericPurchaseTotal = parseNumberInput(purchaseTotal)
-      if (!name.trim()) return setMessage('Mahsulot nomi kiritilishi kerak')
-      if (numericQuantity <= 0) return setMessage('Mahsulot soni noldan katta bo\'lishi kerak')
-      if (numericPurchaseTotal < 0) return setMessage('Umumiy xarid summasi noto\'g\'ri')
-      if (numericPrice <= 0) return setMessage('Sotish narxi noldan katta bo\'lishi kerak')
+      if (!name.trim()) return toast.error('Mahsulot nomi kiritilishi kerak')
+      if (numericQuantity <= 0) return toast.error('Mahsulot soni noldan katta bo\'lishi kerak')
+      if (numericPurchaseTotal < 0) return toast.error('Umumiy xarid summasi noto\'g\'ri')
+      if (numericPrice <= 0) return toast.error('Sotish narxi noldan katta bo\'lishi kerak')
       const payload = {
         name: name.trim(),
         quantity: numericQuantity,
@@ -49,9 +49,9 @@ const AdminProductsPage = () => {
       setPurchaseTotal('')
       setEditing(null)
       await load()
-      setMessage('Mahsulot muvaffaqiyatli saqlandi')
+      toast.success('Mahsulot muvaffaqiyatli saqlandi')
     } catch (err: any) {
-      setMessage(err?.response?.data?.detail || 'Mahsulotni saqlashda xatolik')
+      toast.error(err?.response?.data?.detail || 'Mahsulotni saqlashda xatolik')
     }
   }
 
@@ -84,7 +84,6 @@ const AdminProductsPage = () => {
             <label className="block md:col-span-3"><span className="text-sm text-slate-600 dark:text-slate-300">Sotish narxi</span><input type="text" value={formatNumberInput(price)} onChange={(e) => setPrice(e.target.value)} onBlur={() => setPrice(formatNumberInput(price))} onFocus={() => setPrice(String(parseNumberInput(price) || ''))} placeholder="10 000" className={inputClass} /></label>
             <button onClick={handleSave} className="md:col-span-4 rounded-2xl bg-sky-600 px-5 py-3 text-sm font-semibold text-white hover:bg-sky-500">{editing ? 'Mahsulotni yangilash' : 'Mahsulot qo\'shish'}</button>
           </div>
-          {message && <p className={`mt-4 rounded-2xl p-3 text-sm font-medium ${message.includes('muvaffaq') ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-200' : 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-200'}`}>{message}</p>}
         </section>
         <section className="rounded-3xl bg-white p-6 shadow-soft dark:bg-slate-900">
           <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Mahsulotlar ro'yxati</h3>

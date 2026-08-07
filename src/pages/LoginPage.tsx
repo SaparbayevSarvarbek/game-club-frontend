@@ -1,24 +1,24 @@
 import { FormEvent, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../store/auth'
+import { useToast } from '../components/common/Toast'
 
 const LoginPage = () => {
   const { login } = useAuth()
+  const toast = useToast()
   const navigate = useNavigate()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setError('')
     setLoading(true)
     try {
       const user = await login(username, password)
       navigate(user.role === 'admin' ? '/admin/statistics' : '/dashboard')
     } catch (err) {
-      setError('Login failed. Check your credentials.')
+      toast.error('Login failed. Check your credentials.')
     } finally {
       setLoading(false)
     }
@@ -52,7 +52,6 @@ const LoginPage = () => {
               required
             />
           </label>
-          {error && <p className="text-sm text-rose-400">{error}</p>}
           <button
             type="submit"
             disabled={loading}

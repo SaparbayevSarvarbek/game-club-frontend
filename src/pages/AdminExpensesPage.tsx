@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import Layout from '../components/common/Layout'
+import { useToast } from '../components/common/Toast'
 import api from '../services/api'
 import { formatCurrency, formatNumberInput, parseNumberInput, formatDateTime } from '../utils/format'
 
 const AdminExpensesPage = () => {
   const [expenses, setExpenses] = useState<any[]>([])
   const [payload, setPayload] = useState({ title: '', amount: '', comment: '' })
-  const [message, setMessage] = useState('')
+  const toast = useToast()
 
   const load = async () => {
     const data = await api.fetchExpenses()
@@ -21,11 +22,11 @@ const AdminExpensesPage = () => {
     try {
       const amount = parseNumberInput(payload.amount)
       if (!payload.title.trim()) {
-        setMessage('Xarajat nomini kiritish shart')
+        toast.success('Xarajat nomini kiritish shart')
         return
       }
       if (amount <= 0) {
-        setMessage('Xarajat summasi 0 dan katta boʻlishi kerak')
+        toast.success('Xarajat summasi 0 dan katta boʻlishi kerak')
         return
       }
       await api.createExpense({
@@ -34,20 +35,20 @@ const AdminExpensesPage = () => {
         comment: payload.comment.trim() || null,
       })
       setPayload({ title: '', amount: '', comment: '' })
-      setMessage('Xarajat muvaffaqiyatli qayd qilindi')
+      toast.success('Xarajat muvaffaqiyatli qayd qilindi')
       load()
     } catch (err: any) {
-      setMessage(err?.response?.data?.detail || 'Xarajatni qayd qilishda xatolik')
+      toast.success(err?.response?.data?.detail || 'Xarajatni qayd qilishda xatolik')
     }
   }
 
   const remove = async (id: number) => {
     try {
       await api.deleteExpense(id)
-      setMessage('Xarajat muvaffaqiyatli oʻchirildi')
+      toast.success('Xarajat muvaffaqiyatli oʻchirildi')
       load()
     } catch (err: any) {
-      setMessage(err?.response?.data?.detail || 'Xarajatni oʻchirishda xatolik')
+      toast.success(err?.response?.data?.detail || 'Xarajatni oʻchirishda xatolik')
     }
   }
 
@@ -92,7 +93,6 @@ const AdminExpensesPage = () => {
           <button onClick={add} className="mt-4 rounded-2xl bg-sky-600 px-5 py-3 text-sm font-semibold text-white hover:bg-sky-500">
             Xarajat qoʻshish
           </button>
-          {message && <p className={`mt-4 text-sm ${message.includes('muvaffaq') ? 'text-emerald-600' : 'text-rose-600'}`}>{message}</p>}
         </section>
         <section className="rounded-3xl bg-white p-6 shadow-soft">
           <h3 className="text-lg font-semibold text-slate-900">Xarajatlar roʻyxati</h3>

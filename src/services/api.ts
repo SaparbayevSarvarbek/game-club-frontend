@@ -1,4 +1,5 @@
 import axios, { AxiosError } from 'axios'
+import { toast } from '../components/common/Toast'
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 
@@ -17,16 +18,17 @@ instance.interceptors.request.use((config) => {
 instance.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
-    // Network / CORS errors will have no response
+    // Network / CORS errors will have no response — surface them as a toast.
     if (!error.response) {
-      // Let callers handle network errors — log for debugging
-      console.error('Network or CORS error in API request', error.message)
+      toast.error('Tarmoq xatoligi — ulanishda muammo bo\'ldi, qayta urinib ko\'ring')
       return Promise.reject(error)
     }
     if (error.response?.status === 401) {
       window.localStorage.removeItem('gameclub_auth')
       window.location.href = '/login'
     }
+    // Response errors (4xx/5xx) are surfaced by each page's catch block, so the
+    // caller decides the message. Rejecting here keeps a single toast per error.
     return Promise.reject(error)
   }
 )
@@ -122,9 +124,10 @@ const listDebtors = async (search?: string, includeZeroDebt?: boolean) =>
 const createDebtor = async (payload: unknown) => (await instance.post('/api/debtors', payload as any)).data
 const payDebtor = async (id: number, payload: unknown) => (await instance.post(`/api/debtors/${id}/pay`, payload as any)).data
 const debtorHistory = async (id: number) => (await instance.get(`/api/debtors/${id}/history`)).data
-const fetchAllDebtors = async (search?: string) => (await instance.get('/api/admin/debtors', { params: search ? { search } : {} })).data
+const fetchAllDebtors = async (search?: string, archived?: boolean) => (await instance.get('/api/admin/debtors', { params: { ...(search ? { search } : {}), ...(archived ? { archived: true } : {}) } })).data
 const createAdminDebtor = async (payload: unknown) => (await instance.post('/api/admin/debtors', payload as any)).data
 const deleteAdminDebtor = async (id: number) => (await instance.delete(`/api/admin/debtors/${id}`)).data
+const restoreAdminDebtor = async (id: number) => (await instance.post(`/api/admin/debtors/${id}/restore`)).data
 
 const uploadImage = async (file: File) => {
   const formData = new FormData()
@@ -139,10 +142,6 @@ const productSale = async (payload: unknown) => (await instance.post('/api/produ
 const fetchProductSales = async (params?: unknown) => (await instance.get('/api/productsales', { params: params as any })).data
 const fetchDebtTransactions = async (params?: unknown) => (await instance.get('/api/debt-transactions', { params: params as any })).data
 const dashboardSummary = async () => (await instance.get('/api/dashboard/summary')).data
-
-const unavailable = async (..._args: unknown[]): Promise<never> => {
-  throw new Error('Bu eski modul yangi finance panelda ishlatilmaydi')
-}
 
 export default {
   setToken,
@@ -174,6 +173,7 @@ export default {
   createAdminDebtor,
   updateAdminDebtor: async (id: number, payload: any) => (await instance.put(`/api/admin/debtors/${id}`, payload)).data,
   deleteAdminDebtor,
+  restoreAdminDebtor,
   fetchDailyReports,
   fetchDailyReport,
   fetchProducts,

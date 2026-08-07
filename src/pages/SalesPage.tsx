@@ -3,6 +3,7 @@ import Layout from '../components/common/Layout'
 import api from '../services/api'
 import { FetchProduct, FetchProductSale } from '../types'
 import { formatCurrency, formatNumberInput, parseNumberInput } from '../utils/format'
+import { useToast } from '../components/common/Toast'
 
 const today = new Date().toISOString().slice(0, 10)
 
@@ -13,9 +14,8 @@ const SalesPage = () => {
   const [quantity, setQuantity] = useState(1)
   const [cash, setCash] = useState<string>('')
   const [card, setCard] = useState<string>('')
-  const [message, setMessage] = useState('')
-  const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const toast = useToast()
 
   const load = async () => {
     const [productData, salesData] = await Promise.all([
@@ -26,7 +26,7 @@ const SalesPage = () => {
     setSales(salesData)
   }
 
-  useEffect(() => { load().catch(() => setError('Mahsulotlar yoki sotuvlar yuklanmadi.')) }, [])
+  useEffect(() => { load().catch(() => toast.error('Mahsulotlar yoki sotuvlar yuklanmadi.')) }, [])
 
   const product = useMemo(() => products.find((item) => item.id === selectedProduct), [products, selectedProduct])
   const totalAmount = product ? product.price * quantity : 0
@@ -34,20 +34,18 @@ const SalesPage = () => {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setMessage('')
-    setError('')
-    if (!product) return setError('Mahsulotni tanlang.')
+    if (!product) return toast.error('Mahsulotni tanlang.')
     const cashAmount = parseNumberInput(cash)
     const cardAmount = parseNumberInput(card)
-    if (cashAmount + cardAmount !== totalAmount) return setError("To'lov jami umumiy summaga teng bo'lishi kerak.")
+    if (cashAmount + cardAmount !== totalAmount) return toast.error("To'lov jami umumiy summaga teng bo'lishi kerak.")
     try {
       setLoading(true)
       await api.productSale({ product_id: selectedProduct, quantity, payment_cash: cashAmount, payment_card: cardAmount })
-      setMessage('Mahsulot savdosi saqlandi')
+      toast.success('Mahsulot savdosi saqlandi')
       setCash(''); setCard(''); setSelectedProduct(null); setQuantity(1)
       await load()
     } catch (err: any) {
-      setError(err?.response?.data?.detail || 'Savdoni yaratishda xatolik.')
+      toast.error(err?.response?.data?.detail || 'Savdoni yaratishda xatolik.')
     } finally {
       setLoading(false)
     }
@@ -89,8 +87,6 @@ const SalesPage = () => {
             <div className="rounded-3xl bg-blue-50 p-4 md:col-span-2 dark:bg-blue-950/40"><p className="text-sm text-blue-700 dark:text-blue-200">Jami</p><p className="mt-2 text-3xl font-semibold text-blue-800 dark:text-blue-100">{formatCurrency(totalAmount)}</p></div>
             <button type="submit" disabled={loading} className="rounded-2xl bg-sky-600 px-5 py-3 text-sm font-semibold text-white hover:bg-sky-500 md:col-span-2 disabled:opacity-60">Savdoni saqlash</button>
           </form>
-          {error && <div className="mt-4 rounded-3xl bg-rose-50 p-4 text-sm font-medium text-rose-700 dark:bg-rose-950/40 dark:text-rose-200">{error}</div>}
-          {message && <div className="mt-4 rounded-3xl bg-emerald-50 p-4 text-sm font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-200">{message}</div>}
         </div>
         <div className="rounded-3xl bg-white p-6 shadow-soft dark:bg-slate-900">
           <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Bugungi sotuvlar</h3>

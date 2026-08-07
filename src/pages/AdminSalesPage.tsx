@@ -3,6 +3,7 @@ import Layout from '../components/common/Layout'
 import api from '../services/api'
 import { FetchComputer, FetchProduct, FetchProductSale } from '../types'
 import { formatCurrency } from '../utils/format'
+import { useToast } from '../components/common/Toast'
 
 const today = new Date().toISOString().slice(0, 10)
 
@@ -14,11 +15,10 @@ const AdminSalesPage = () => {
   const [productId, setProductId] = useState('')
   const [computerId, setComputerId] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const toast = useToast()
 
   const load = async () => {
     setLoading(true)
-    setError('')
     try {
       const params: any = { limit: 300 }
       if (date) params.date = date
@@ -33,7 +33,7 @@ const AdminSalesPage = () => {
       setProducts(productData)
       setComputers(computerData)
     } catch (err: any) {
-      setError(err?.response?.data?.detail || 'Sotuvlar tarixini yuklashda xatolik')
+      toast.error(err?.response?.data?.detail || 'Sotuvlar tarixini yuklashda xatolik')
     } finally {
       setLoading(false)
     }
@@ -97,7 +97,6 @@ const AdminSalesPage = () => {
 
         <section className="rounded-3xl bg-white p-6 shadow-soft dark:bg-slate-900">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Sotuvlar tarixi</h2>
-          {error && <div className="mt-4 rounded-2xl bg-rose-50 p-3 text-sm text-rose-700 dark:bg-rose-950/40 dark:text-rose-200">{error}</div>}
           <div className="mt-5 overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-slate-700">
               <thead className="bg-slate-50 dark:bg-slate-800">

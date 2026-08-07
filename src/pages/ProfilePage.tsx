@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react'
 import Layout from '../components/common/Layout'
+import { useToast } from '../components/common/Toast'
 import { useAuth } from '../store/auth'
 import api from '../services/api'
 import { formatCurrency, formatDateTime } from '../utils/format'
 
 const ProfilePage = () => {
   const { user } = useAuth()
+  const toast = useToast()
   const [statistics, setStatistics] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
 
   useEffect(() => {
     const loadStats = async () => {
@@ -16,7 +17,7 @@ const ProfilePage = () => {
         const data = await api.fetchUserStatistics()
         setStatistics(data)
       } catch (err) {
-        setError('Unable to load statistics')
+        toast.error('Unable to load statistics')
       } finally {
         setLoading(false)
       }

@@ -1,21 +1,23 @@
 import { useEffect, useRef, useState } from 'react'
 import { ArrowPathIcon, TrashIcon, ArrowUturnLeftIcon } from '@heroicons/react/24/outline'
 import api from '../../services/api'
-import { formatCurrency, formatNumberInput, parseNumberInput } from '../../utils/format'
+import { formatCurrency, formatNumberInput, formatPhoneNumber, parseNumberInput } from '../../utils/format'
+import { parseError } from '../../utils/error'
 import { FetchProduct } from '../../types'
 import IconButton from '../../components/common/IconButton'
+import PhoneInput from '../../components/common/PhoneInput'
+import { useToast } from '../common/Toast'
 
 const DebtorInlineAdd = ({ setDebtors, setDebtorId }: { setDebtors: (d: any[]) => void; setDebtorId: (id: number | null) => void }) => {
   const [show, setShow] = useState(false)
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
+  const toast = useToast()
 
   const create = async () => {
-    setError('')
     if (!fullName.trim() || !phone.trim()) {
-      setError('Ism va telefon toʻldirilishi shart')
+      toast.error('Ism va telefon toʻldirilishi shart')
       return
     }
     setSaving(true)
@@ -29,15 +31,14 @@ const DebtorInlineAdd = ({ setDebtors, setDebtorId }: { setDebtors: (d: any[]) =
         phone: phone.trim(),
         total_debt: 0,
       })
-      const list = await api.listDebtors()
+      const list = await api.listDebtors(undefined, true)
       setDebtors(list)
       setDebtorId(debtor.id)
       setFullName('')
       setPhone('')
-      setError('')
       setShow(false)
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || 'Qarzdorni qoʻshishda xatolik')
+    } catch (err) {
+      toast.error(parseError(err) || 'Qarzdorni qoʻshishda xatolik')
     } finally {
       setSaving(false)
     }
@@ -56,14 +57,13 @@ const DebtorInlineAdd = ({ setDebtors, setDebtorId }: { setDebtors: (d: any[]) =
       <h4 className="font-semibold text-slate-900 dark:text-slate-100">Yangi qarzdor qoʻshing</h4>
       <div className="grid gap-3 sm:grid-cols-2">
         <input placeholder="Ism va familiya" value={fullName} onChange={(e) => setFullName(e.target.value)} className="rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-3 py-2" />
-        <input placeholder="Telefon" value={phone} onChange={(e) => setPhone(e.target.value)} className="rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-3 py-2" />
+        <PhoneInput value={phone} onChange={setPhone} />
       </div>
-      {error && <p className="text-sm text-rose-600 dark:text-rose-400">{error}</p>}
       <div className="flex gap-3">
         <button onClick={create} disabled={saving} className="rounded-2xl bg-emerald-500 dark:bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-400 dark:hover:bg-emerald-500 disabled:opacity-60">
           {saving ? 'Saqlanamoqda...' : 'Saqlash'}
         </button>
-        <button onClick={() => { setShow(false); setError('') }} className="rounded-2xl border border-slate-300 dark:border-slate-600 dark:bg-slate-700 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600">
+        <button onClick={() => setShow(false)} className="rounded-2xl border border-slate-300 dark:border-slate-600 dark:bg-slate-700 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600">
           Bekor qilish
         </button>
       </div>
@@ -106,9 +106,9 @@ const SessionDialog = ({ computer, products, close, onStart, onSave, onComplete,
   const [debtorDropdownOpen, setDebtorDropdownOpen] = useState(false)
   const [debtorId, setDebtorId] = useState<number | null>(null)
   const [debtors, setDebtors] = useState<any[]>([])
-  const [error, setError] = useState<string>('')
   const debtorDropdownRef = useRef<HTMLDivElement | null>(null)
   const [processing, setProcessing] = useState(false)
+  const toast = useToast()
   const [showPayment, setShowPayment] = useState(false)
   const [localActiveSession, setLocalActiveSession] = useState<ActiveSession | null>(activeSession ?? null)
 
@@ -120,7 +120,6 @@ const SessionDialog = ({ computer, products, close, onStart, onSave, onComplete,
     setPaymentCard('')
     setPaymentDebt('')
     setDebtorId(null)
-    setError('')
     setShowPayment(false)
   }, [computer, activeSession])
 
@@ -203,10 +202,7 @@ const SessionDialog = ({ computer, products, close, onStart, onSave, onComplete,
   const productsTotal = existingProductsTotal + selectedProductsTotal
   const subtotal = computerPriceRaw + productsTotal
   const totalWithDiscount = Math.max(0, subtotal - discountRaw)
-  const paymentTotal = parseNumberInput(paymentCash) + parseNumberInput(paymentCard) + parseNumberInput(paymentDebt)
-
   const handleSaveClick = async () => {
-    setError('')
     setProcessing(true)
     try {
       if (computer.is_active && activeSession) {
@@ -230,34 +226,33 @@ const SessionDialog = ({ computer, products, close, onStart, onSave, onComplete,
         return
       }
       if (totalWithDiscount <= 0) {
-        setError('Hisob 0 dan katta bolishi kerak')
+        toast.error('Hisob 0 dan katta bolishi kerak')
         return
       }
       await onStart({ computer_id: computer.id, computer_price: computerPriceRaw, products: selectedProducts, discount: discountRaw })
       close()
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || 'Sessiyani saqlashda xatolik')
+    } catch (err) {
+      toast.error(parseError(err) || 'Sessiyani saqlashda xatolik')
     } finally {
       setProcessing(false)
     }
   }
 
   const handleConfirmPayment = async () => {
-    setError('')
     setProcessing(true)
     try {
       if (totalWithDiscount <= 0) {
-        setError('Hisob 0 dan katta bolishi kerak')
+        toast.error('Hisob 0 dan katta bolishi kerak')
         return
       }
-      const cashAmount = paymentTotal === 0 ? totalWithDiscount : parseNumberInput(paymentCash)
+      const cashAmount = parseNumberInput(paymentCash)
       const finalPaymentTotal = cashAmount + parseNumberInput(paymentCard) + parseNumberInput(paymentDebt)
       if (finalPaymentTotal !== totalWithDiscount) {
-        setError('Naqd, karta va qarz jami toʻlovga teng boʻlishi kerak')
+        toast.error('Naqd, karta va qarz jami toʻlovga teng boʻlishi kerak')
         return
       }
       if (parseNumberInput(paymentDebt) > 0 && !debtorId) {
-        setError('Qarz toʻlovini yozayotganda qarzdorni tanlang')
+        toast.error('Qarz toʻlovini yozayotganda qarzdorni tanlang')
         return
       }
 
@@ -299,11 +294,10 @@ const SessionDialog = ({ computer, products, close, onStart, onSave, onComplete,
         await api.completeSession(sessionId!, payload)
       }
       close()
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || 'Toʻlovni amalga oshirishda xatolik')
+    } catch (err) {
+      toast.error(parseError(err) || 'Toʻlovni amalga oshirishda xatolik')
     } finally {
       setProcessing(false)
-      setShowPayment(false)
     }
   }
 
@@ -323,29 +317,6 @@ const SessionDialog = ({ computer, products, close, onStart, onSave, onComplete,
             <div className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-4">
               <p className="text-sm text-slate-500 dark:text-slate-400">Faol sessiya boshlangan</p>
               <p className="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">{new Date(activeSession.started_at).toLocaleString('uz-UZ')}</p>
-              <div className="absolute right-4 top-4">
-                <button
-                  onClick={async () => {
-                    if (!localActiveSession) return
-                    setProcessing(true)
-                    setError('')
-                    try {
-                      await api.cancelSession(localActiveSession.session_id)
-                      setLocalActiveSession(null)
-                      onProductsAdded?.()
-                      close()
-                    } catch (err: any) {
-                      setError(err?.response?.data?.detail || 'Sessiyani o‘chirishda xatolik')
-                    } finally {
-                      setProcessing(false)
-                    }
-                  }}
-                  disabled={processing}
-                  className="rounded-full bg-rose-600 dark:bg-rose-700 p-2 text-white hover:bg-rose-500"
-                >
-                  <TrashIcon className="h-4 w-4" />
-                </button>
-              </div>
               <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Oldingi mahsulotlar: {formatCurrency(existingProductsTotal)}</p>
                   {savedProducts.length > 0 && (
                 <div className="mt-3 space-y-2">
@@ -462,8 +433,6 @@ const SessionDialog = ({ computer, products, close, onStart, onSave, onComplete,
             </div>
           </div>
 
-          {error && <p className="rounded-2xl bg-rose-50 dark:bg-rose-900/30 p-3 text-sm text-rose-700 dark:text-rose-300">{error}</p>}
-
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
             <button onClick={close} disabled={processing} className="rounded-2xl border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-5 py-3 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700">Orqaga</button>
             <div className="flex gap-2">
@@ -547,7 +516,7 @@ const SessionDialog = ({ computer, products, close, onStart, onSave, onComplete,
                             className="w-full px-4 py-3 text-left text-sm text-slate-900 hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-slate-800"
                           >
                             <div className="font-medium">{debtor.first_name} {debtor.last_name}</div>
-                            <div className="text-xs text-slate-500 dark:text-slate-400">{debtor.phone} — {formatCurrency(Number(debtor.total_debt ?? 0))}</div>
+                            <div className="text-xs text-slate-500 dark:text-slate-400">{formatPhoneNumber(debtor.phone)} — {formatCurrency(Number(debtor.total_debt ?? 0))}</div>
                           </button>
                         ))
                       )}
@@ -559,8 +528,6 @@ const SessionDialog = ({ computer, products, close, onStart, onSave, onComplete,
                 </div>
               </div>
             )}
-
-            {error && <p className="mt-4 rounded-2xl bg-rose-50 dark:bg-rose-900/30 p-3 text-sm text-rose-700 dark:text-rose-300">{error}</p>}
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
               <button onClick={() => setShowPayment(false)} disabled={processing} className="rounded-2xl border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-5 py-3 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700">Orqaga</button>

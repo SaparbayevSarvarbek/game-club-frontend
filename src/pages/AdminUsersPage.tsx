@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react'
 import Layout from '../components/common/Layout'
 import IconButton from '../components/common/IconButton'
 import api from '../services/api'
+import { useToast } from '../components/common/Toast'
 
 const AdminUsersPage = () => {
+  const toast = useToast()
   const [users, setUsers] = useState<any[]>([])
   const [payload, setPayload] = useState({ username: '', password: '', full_name: '', role: 'user', is_active: true })
-  const [message, setMessage] = useState('')
 
   const load = async () => {
     const data = await api.fetchUsers()
@@ -22,13 +23,13 @@ const AdminUsersPage = () => {
       await api.createUser(payload)
       setPayload({ username: '', password: '', full_name: '', role: 'user', is_active: true })
       await load()
-      setMessage('Foydalanuvchi muvaffaqiyatli yaratildi')
+      toast.success('Foydalanuvchi muvaffaqiyatli yaratildi')
     } catch (error: any) {
       const detail = error?.response?.data?.detail
       const message = Array.isArray(detail)
         ? detail.map((item) => item?.msg || JSON.stringify(item)).join('; ')
         : detail || 'Foydalanuvchini yaratishda xatolik'
-      setMessage(message)
+      toast.error(message)
     }
   }
 
@@ -86,7 +87,6 @@ const AdminUsersPage = () => {
               Foydalanuvchi yaratish
             </button>
           </div>
-          {message && <p className={`mt-4 text-sm ${message.includes('muvaffaq') ? 'text-emerald-600' : 'text-rose-600'}`}>{message}</p>}
         </section>
         <section className="rounded-3xl bg-white p-6 shadow-soft">
           <h3 className="text-lg font-semibold text-slate-900">Foydalanuvchilar roʻyxati</h3>

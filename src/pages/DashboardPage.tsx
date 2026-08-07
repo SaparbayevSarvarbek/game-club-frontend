@@ -3,11 +3,13 @@ import Layout from '../components/common/Layout'
 import SessionDialog from '../components/user/SessionDialog'
 import api from '../services/api'
 import { FetchComputer, FetchProduct, FetchProductSale } from '../types'
-import { formatCurrency } from '../utils/format'
+import { formatCurrency, formatPhoneNumber } from '../utils/format'
 import { parseError } from '../utils/error'
+import { useToast } from '../components/common/Toast'
 import { ComputerDesktopIcon, PlayIcon } from '@heroicons/react/24/outline'
 
 const DashboardPage = () => {
+  const toast = useToast()
   const [computers, setComputers] = useState<FetchComputer[]>([])
   const [products, setProducts] = useState<FetchProduct[]>([])
   const [sales, setSales] = useState<FetchProductSale[]>([])
@@ -22,13 +24,10 @@ const DashboardPage = () => {
   const [showDebtDrawer, setShowDebtDrawer] = useState(false)
   const [debtTransactions, setDebtTransactions] = useState<any[]>([])
   const [loadingDebts, setLoadingDebts] = useState(false)
-  const [message, setMessage] = useState<string>('')
-  const [error, setError] = useState<string>('')
-  
+
   const loadData = async () => {
     // 1. Fetch computers and products first (essential for UI)
     try {
-      setError('')
       const [computersData, productsData] = await Promise.all([
         api.fetchComputers(),
         api.fetchProducts()
@@ -37,7 +36,7 @@ const DashboardPage = () => {
       setProducts(productsData)
     } catch (err) {
       console.error("Essential data fetch error:", err)
-      setError('Kassa ma\'lumotlarini yuklashda xatolik. Qayta yuklang.')
+      toast.error('Kassa ma\'lumotlarini yuklashda xatolik. Qayta yuklang.')
     }
 
     // 2. Fetch statistics, sales and debts independently (non-blocking)
@@ -103,7 +102,7 @@ const DashboardPage = () => {
       const salesData = await api.fetchProductSales({ date: today, limit: 200 })
       setSales(salesData)
     } catch {
-      setError('Bugungi sotuvlar ma\'lumotini yuklashda xatolik.')
+      toast.error('Bugungi sotuvlar ma\'lumotini yuklashda xatolik.')
     } finally {
       setLoadingSales(false)
     }
@@ -116,7 +115,7 @@ const DashboardPage = () => {
       const debtsData = await api.fetchDebtTransactions({ date: today, limit: 200 })
       setDebtTransactions(debtsData)
     } catch {
-      setError('Bugungi qarz ma\'lumotlarini yuklashda xatolik.')
+      toast.error('Bugungi qarz ma\'lumotlarini yuklashda xatolik.')
     } finally {
       setLoadingDebts(false)
     }
@@ -124,10 +123,8 @@ const DashboardPage = () => {
 
   const handleStart = async (payload: any) => {
     try {
-      setError('')
-      setMessage('')
       await api.startSession(payload)
-      setMessage('Sessiya muvaffaqiyatli boshlanayapti...')
+      toast.success('Sessiya muvaffaqiyatli boshlanayapti...')
       setSelected(null)
       setActiveSession(null)
       setTimeout(() => {
@@ -135,15 +132,12 @@ const DashboardPage = () => {
       }, 500)
     } catch (err: unknown) {
       const errorMsg = parseError(err) || 'Sessiyani boshlashda xatolik'
-      setError(errorMsg)
-      setMessage('')
+      toast.error(errorMsg)
     }
   }
 
   const handleComputerSelect = async (computer: FetchComputer) => {
     setSelected(computer)
-    setMessage('')
-    setError('')
     setActiveSession(null)
 
     if (computer.is_active) {
@@ -152,7 +146,7 @@ const DashboardPage = () => {
         const active = await api.fetchActiveSession(computer.id)
         setActiveSession(active)
       } catch {
-        setError('Bu kompyuterning faol sessiyasini yuklashda xatolik')
+        toast.error('Bu kompyuterning faol sessiyasini yuklashda xatolik')
         setActiveSession(null)
       } finally {
         setLoadingSession(false)
@@ -164,10 +158,8 @@ const DashboardPage = () => {
 
   const handleSave = async (sessionId: number) => {
     try {
-      setError('')
-      setMessage('')
       await api.saveSession(sessionId)
-      setMessage('Sessiya muvaffaqiyatli saqlandi')
+      toast.success('Sessiya muvaffaqiyatli saqlandi')
       await loadData()
       if (selected) {
         try {
@@ -180,17 +172,14 @@ const DashboardPage = () => {
       setSelected(null)
     } catch (err: unknown) {
       const errorMsg = parseError(err) || 'Sessiyani saqlashda xatolik'
-      setError(errorMsg)
-      setMessage('')
+      toast.error(errorMsg)
     }
   }
 
   const handleComplete = async (payload: any) => {
     try {
-      setError('')
-      setMessage('')
       await api.completeSession(payload.session_id, payload)
-      setMessage('Sessiya muvaffaqiyatli yakunlandi')
+      toast.success('Sessiya muvaffaqiyatli yakunlandi')
       setSelected(null)
       setActiveSession(null)
       await loadData()
@@ -199,8 +188,7 @@ const DashboardPage = () => {
       }
     } catch (err: unknown) {
       const errorMsg = parseError(err) || "Sessiyani yakunlashda xatolik. To'lov miqdorlarini tekshiring."
-      setError(errorMsg)
-      setMessage('')
+      toast.error(errorMsg)
     }
   }
 
@@ -332,8 +320,6 @@ const DashboardPage = () => {
           </div>
         </section>
 
-        {message && <div className="rounded-3xl bg-emerald-50 dark:bg-emerald-900/30 p-4 text-sm font-medium text-emerald-700 dark:text-emerald-300">{message}</div>}
-        {error && <div className="rounded-3xl bg-rose-50 dark:bg-rose-900/30 p-4 text-sm font-medium text-rose-700 dark:text-rose-300">{error}</div>}
       </div>
 
       {selected && (
@@ -457,7 +443,7 @@ const DashboardPage = () => {
                             >
                               <div className="min-w-0 pr-4">
                                 <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">{t.debtor_name || 'Noma\'lum qarzdor'}</p>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Telefon: {t.debtor_phone || '—'}</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Telefon: {t.debtor_phone ? formatPhoneNumber(t.debtor_phone) : '—'}</p>
                               </div>
 
                               <div className="ml-4 text-right flex-shrink-0">

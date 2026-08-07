@@ -69,3 +69,31 @@ export const parseNumberInput = (value: string | number) => {
   const parsed = Number(cleaned)
   return Number.isFinite(parsed) ? parsed : 0
 }
+
+// Uzbek mobile phone formatter: accepts only digits and renders as "+998 93 285 38 74".
+// Handles national (9-digit), old "8" prefix, or full international ("998...") input.
+// Caps at the 9-digit national number so no more digits can be added.
+export const formatPhoneNumber = (value: string | number | null | undefined): string => {
+  let digits = String(value ?? '').replace(/\D/g, '')
+  if (!digits) return ''
+  // Normalize a full international or legacy "8" prefix to the 9-digit national part
+  if (digits.startsWith('998') && digits.length > 11) {
+    digits = digits.slice(3)
+  } else if (digits.startsWith('8') && digits.length > 9) {
+    digits = digits.slice(1)
+  }
+  digits = digits.slice(0, 9)
+  if (!digits) return ''
+
+  const operator = digits.slice(0, 2)
+  const part1 = digits.slice(2, 5)
+  const part2 = digits.slice(5, 7)
+  const part3 = digits.slice(7, 9)
+
+  let out = '+998'
+  if (operator) out += ` ${operator}`
+  if (part1) out += ` ${part1}`
+  if (part2) out += ` ${part2}`
+  if (part3) out += ` ${part3}`
+  return out
+}
