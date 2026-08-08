@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowPathIcon, TrashIcon, ArrowUturnLeftIcon } from '@heroicons/react/24/outline'
+import { TrashIcon, ArrowUturnLeftIcon } from '@heroicons/react/24/outline'
 import api from '../../services/api'
 import { formatCurrency, formatNumberInput, formatPhoneNumber, parseNumberInput } from '../../utils/format'
 import { parseError } from '../../utils/error'
@@ -7,6 +7,9 @@ import { FetchProduct } from '../../types'
 import IconButton from '../../components/common/IconButton'
 import PhoneInput from '../../components/common/PhoneInput'
 import { useToast } from '../common/Toast'
+import Modal from '../ui/Modal'
+import Field from '../ui/Field'
+import Button from '../ui/Button'
 
 const DebtorInlineAdd = ({ setDebtors, setDebtorId }: { setDebtors: (d: any[]) => void; setDebtorId: (id: number | null) => void }) => {
   const [show, setShow] = useState(false)
@@ -46,26 +49,29 @@ const DebtorInlineAdd = ({ setDebtors, setDebtorId }: { setDebtors: (d: any[]) =
 
   if (!show) {
     return (
-      <button onClick={() => setShow(true)} className="rounded-2xl border border-sky-300 dark:border-sky-700 bg-sky-50 dark:bg-sky-950/40 px-4 py-2 text-sm font-medium text-sky-600 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-900/60">
+      <Button variant="secondary" size="sm" onClick={() => setShow(true)}>
         + Yangi qarzdor
-      </button>
+      </Button>
     )
   }
 
   return (
-    <div className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 space-y-3">
+    <div className="space-y-3 rounded-3xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
       <h4 className="font-semibold text-slate-900 dark:text-slate-100">Yangi qarzdor qoʻshing</h4>
       <div className="grid gap-3 sm:grid-cols-2">
-        <input placeholder="Ism va familiya" value={fullName} onChange={(e) => setFullName(e.target.value)} className="rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-3 py-2" />
+        <Field
+          as="input"
+          inputProps={{ placeholder: 'Ism va familiya', value: fullName, onChange: (e: any) => setFullName(e.target.value) }}
+        />
         <PhoneInput value={phone} onChange={setPhone} />
       </div>
       <div className="flex gap-3">
-        <button onClick={create} disabled={saving} className="rounded-2xl bg-emerald-500 dark:bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-400 dark:hover:bg-emerald-500 disabled:opacity-60">
+        <Button onClick={create} isLoading={saving}>
           {saving ? 'Saqlanamoqda...' : 'Saqlash'}
-        </button>
-        <button onClick={() => setShow(false)} className="rounded-2xl border border-slate-300 dark:border-slate-600 dark:bg-slate-700 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600">
+        </Button>
+        <Button variant="secondary" onClick={() => setShow(false)}>
           Bekor qilish
-        </button>
+        </Button>
       </div>
     </div>
   )
@@ -301,191 +307,140 @@ const SessionDialog = ({ computer, products, close, onStart, onSave, onComplete,
     }
   }
 
+  const numInputProps = (value: string, setter: (v: string) => void) => ({
+    type: 'text',
+    inputMode: 'numeric' as const,
+    value: formatNumberInput(value),
+    onChange: (e: any) => setter(e.target.value),
+    onBlur: () => setter(formatNumberInput(value)),
+    onFocus: () => setter(String(parseNumberInput(value) || '')),
+  })
+
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/70 p-3 sm:items-center sm:p-4">
-      <div className="my-4 max-h-[calc(100vh-2rem)] w-full max-w-2xl overflow-y-auto overscroll-contain rounded-3xl bg-white p-4 shadow-soft dark:bg-slate-950 sm:p-6">
-          <div className="flex items-center justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Sessiya: #{computer.number}</h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400">{computer.type}</p>
+    <Modal open onClose={close} maxWidth="max-w-2xl" title={`Sessiya: #${computer.number}`} subtitle={computer.type}>
+      <div className="space-y-6">
+        {computer.is_active && activeSession && (
+          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+            <p className="text-sm text-slate-500 dark:text-slate-400">Faol sessiya boshlangan</p>
+            <p className="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">{new Date(activeSession.started_at).toLocaleString('uz-UZ')}</p>
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Oldingi mahsulotlar: {formatCurrency(existingProductsTotal)}</p>
+            {savedProducts.length > 0 && (
+              <div className="mt-3 space-y-2">
+                {savedProducts.map((item) => {
+                  const pending = (localActiveSession?.products?.find((p: any) => p.id === item.id) as any)?.pending_remove
+                  return (
+                    <div key={item.id} className={`flex items-center justify-between rounded-2xl px-3 py-2 text-sm transition-all duration-200 ${pending ? 'bg-rose-50 opacity-70 line-through dark:bg-rose-900/30' : 'bg-white text-slate-700 dark:bg-slate-700 dark:text-slate-200'}`}>
+                      <span>{item.product_name || `Mahsulot #${item.product_id}`} x {item.quantity}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{formatCurrency(Number(item.price) * item.quantity)}</span>
+                        {pending ? (
+                          <button onClick={() => {
+                            // undo pending removal
+                            setLocalActiveSession((prev) => {
+                              if (!prev) return prev
+                              return { ...prev, products: (prev.products || []).map((p: any) => p.id === item.id ? { ...p, pending_remove: false } : p) }
+                            })
+                          }} disabled={processing} title="Bekor qilish" aria-label="Bekor qilish">
+                            <ArrowUturnLeftIcon className="h-4 w-4" />
+                          </button>
+                        ) : (
+                          <button onClick={() => {
+                            // mark pending removal locally; actual delete happens on Save/Complete
+                            setLocalActiveSession((prev) => {
+                              if (!prev) return prev
+                              return { ...prev, products: (prev.products || []).map((p: any) => p.id === item.id ? { ...p, pending_remove: true } : p) }
+                            })
+                          }} disabled={processing} title="O'chirish" aria-label="O'chirish">
+                            <TrashIcon className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
-          <button onClick={close} disabled={processing} className="rounded-full border border-slate-300 bg-white p-2 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-800">Bekor qilish</button>
+        )}
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field
+            as="input"
+            label={computer.type === 'playstation' ? 'PlayStation narxi' : 'Kompyuter narxi'}
+            inputProps={numInputProps(computerPrice, setComputerPrice)}
+          />
+          <Field as="input" label="Chegirma miqdori" inputProps={numInputProps(discount, setDiscount)} />
         </div>
 
-        <div className="mt-6 space-y-6">
-          {computer.is_active && activeSession && (
-            <div className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-4">
-              <p className="text-sm text-slate-500 dark:text-slate-400">Faol sessiya boshlangan</p>
-              <p className="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">{new Date(activeSession.started_at).toLocaleString('uz-UZ')}</p>
-              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Oldingi mahsulotlar: {formatCurrency(existingProductsTotal)}</p>
-                  {savedProducts.length > 0 && (
-                <div className="mt-3 space-y-2">
-                  {savedProducts.map((item) => {
-                    const pending = (localActiveSession?.products?.find((p: any) => p.id === item.id) as any)?.pending_remove
-                    return (
-                      <div key={item.id} className={`flex items-center justify-between rounded-2xl px-3 py-2 text-sm transition-all duration-200 ${pending ? 'bg-rose-50 dark:bg-rose-900/30 opacity-70 line-through' : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200'}`}>
-                        <span>{item.product_name || `Mahsulot #${item.product_id}`} x {item.quantity}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{formatCurrency(Number(item.price) * item.quantity)}</span>
-                          {pending ? (
-                            <button onClick={() => {
-                              // undo pending removal
-                              setLocalActiveSession((prev) => {
-                                if (!prev) return prev
-                                return { ...prev, products: (prev.products || []).map((p: any) => p.id === item.id ? { ...p, pending_remove: false } : p) }
-                              })
-                            }} disabled={processing} title="Bekor qilish" aria-label="Bekor qilish">
-                              <ArrowUturnLeftIcon className="h-4 w-4" />
-                            </button>
-                          ) : (
-                            <button onClick={() => {
-                              // mark pending removal locally; actual delete happens on Save/Complete
-                              setLocalActiveSession((prev) => {
-                                if (!prev) return prev
-                                return { ...prev, products: (prev.products || []).map((p: any) => p.id === item.id ? { ...p, pending_remove: true } : p) }
-                              })
-                            }} disabled={processing} title="O'chirish" aria-label="O'chirish">
-                              <TrashIcon className="h-4 w-4" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    )
-                  })}
+        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="font-semibold text-slate-900 dark:text-slate-100">Mahsulotlar</h3>
+            <Button size="sm" onClick={addProduct}>Mahsulot qoʻshish</Button>
+          </div>
+          <div className="space-y-4">
+            {selectedProducts.length === 0 ? (
+              <p className="text-sm text-slate-500 dark:text-slate-400">Mahsulot qoʻshish uchun tugmani bosing.</p>
+            ) : (
+              selectedProducts.map((item, index) => (
+                <div key={index} className="grid gap-3 sm:grid-cols-[1fr_100px_auto] transition-colors duration-200 ease-in-out">
+                  <select
+                    value={item.product_id}
+                    onChange={(e) => changeRow(index, 'product_id', Number(e.target.value))}
+                    className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 transition-colors duration-200 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+                  >
+                    {products.map((product) => (
+                      <option key={product.id} value={product.id}>{product.name}{product.quantity != null ? `-${product.quantity}` : ''}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="number"
+                    min={1}
+                    value={item.quantity}
+                    onChange={(e) => changeRow(index, 'quantity', Number(e.target.value))}
+                    className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 transition-shadow duration-150 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+                  />
+                  <IconButton onClick={() => removeRow(index)} title="O'chirish" variant="danger" icon={<TrashIcon className="h-4 w-4" />} />
                 </div>
-              )}
-            </div>
-          )}
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block">
-              <span className="text-sm text-slate-600 dark:text-slate-300">{computer.type === 'playstation' ? 'PlayStation narxi' : 'Kompyuter narxi'}</span>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={formatNumberInput(computerPrice)}
-                onChange={(e) => setComputerPrice(e.target.value)}
-                onBlur={() => setComputerPrice(formatNumberInput(computerPrice))}
-                onFocus={() => setComputerPrice(String(parseNumberInput(computerPrice) || ''))}
-                className="mt-2 w-full rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-4 py-3"
-              />
-            </label>
-            <label className="block">
-              <span className="text-sm text-slate-600 dark:text-slate-300">Chegirma miqdori</span>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={formatNumberInput(discount)}
-                onChange={(e) => setDiscount(e.target.value)}
-                onBlur={() => setDiscount(formatNumberInput(discount))}
-                onFocus={() => setDiscount(String(parseNumberInput(discount) || ''))}
-                className="mt-2 w-full rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-4 py-3"
-              />
-            </label>
+              ))
+            )}
           </div>
+        </div>
 
-          <div className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-slate-900 dark:text-slate-100">Mahsulotlar</h3>
-              <button onClick={addProduct} className="rounded-full bg-sky-500 dark:bg-sky-600 px-3 py-1 text-sm text-white hover:bg-sky-400 dark:hover:bg-sky-500">Mahsulot qoʻshish</button>
-            </div>
-            <div className="space-y-4">
-              {selectedProducts.length === 0 ? (
-                <p className="text-sm text-slate-500 dark:text-slate-400">Mahsulot qoʻshish uchun tugmani bosing.</p>
-              ) : (
-                selectedProducts.map((item, index) => (
-                  <div key={index} className="grid gap-3 sm:grid-cols-[1fr_100px_auto] transition-colors duration-200 ease-in-out">
-                    <select
-                      value={item.product_id}
-                      onChange={(e) => changeRow(index, 'product_id', Number(e.target.value))}
-                      className="rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-4 py-3 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-200 transition-colors duration-200"
-                    >
-                      {products.map((product) => (
-                        <option key={product.id} value={product.id}>{product.name}{product.quantity != null ? `-${product.quantity}` : ''}</option>
-                      ))}
-                    </select>
-                    <input
-                      type="number"
-                      min={1}
-                      value={item.quantity}
-                      onChange={(e) => changeRow(index, 'quantity', Number(e.target.value))}
-                      className="rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-200 transition-shadow duration-150"
-                    />
-                    <IconButton onClick={() => removeRow(index)} title="O'chirish" variant="danger" icon={<TrashIcon className="h-4 w-4" />} />
-                  </div>
-                ))
-              )}
-            </div>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+            <p className="text-sm text-slate-500 dark:text-slate-400">Mahsulotlar jami</p>
+            <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(productsTotal)}</p>
           </div>
-
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-4">
-              <p className="text-sm text-slate-500 dark:text-slate-400">Mahsulotlar jami</p>
-              <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(productsTotal)}</p>
-            </div>
-            <div className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-4">
-              <p className="text-sm text-slate-500 dark:text-slate-400">Jami</p>
-              <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(subtotal)}</p>
-            </div>
-            <div className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-4">
-              <p className="text-sm text-slate-500 dark:text-slate-400">Chegirma bilan</p>
-              <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(totalWithDiscount)}</p>
-            </div>
+          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+            <p className="text-sm text-slate-500 dark:text-slate-400">Jami</p>
+            <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(subtotal)}</p>
           </div>
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-            <button onClick={close} disabled={processing} className="rounded-2xl border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-5 py-3 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700">Orqaga</button>
-            <div className="flex gap-2">
-              <button onClick={handleSaveClick} disabled={processing} className="rounded-2xl border border-slate-300 px-5 py-3 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">Saqlash</button>
-              <button onClick={() => setShowPayment(true)} disabled={processing} className="rounded-2xl bg-sky-600 dark:bg-sky-700 px-5 py-3 text-sm font-semibold text-white hover:bg-sky-500 dark:hover:bg-sky-600">To'lash</button>
-            </div>
+          <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-950/40">
+            <p className="text-sm text-emerald-600 dark:text-emerald-300">Chegirma bilan</p>
+            <p className="mt-2 text-2xl font-semibold text-emerald-800 dark:text-emerald-100">{formatCurrency(totalWithDiscount)}</p>
           </div>
+        </div>
 
-          {showPayment && (
-            <div>
-            <div className="mt-6 grid gap-4 sm:grid-cols-3">
-              <label className="block">
-                <span className="text-sm text-slate-600 dark:text-slate-300">Naqd</span>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={formatNumberInput(paymentCash)}
-                  onChange={(e) => setPaymentCash(e.target.value)}
-                  onBlur={() => setPaymentCash(formatNumberInput(paymentCash))}
-                  onFocus={() => setPaymentCash(String(parseNumberInput(paymentCash) || ''))}
-                  className="mt-2 w-full rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-4 py-3"
-                />
-              </label>
-              <label className="block">
-                <span className="text-sm text-slate-600 dark:text-slate-300">Karta</span>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={formatNumberInput(paymentCard)}
-                  onChange={(e) => setPaymentCard(e.target.value)}
-                  onBlur={() => setPaymentCard(formatNumberInput(paymentCard))}
-                  onFocus={() => setPaymentCard(String(parseNumberInput(paymentCard) || ''))}
-                  className="mt-2 w-full rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-4 py-3"
-                />
-              </label>
-              <label className="block">
-                <span className="text-sm text-slate-600 dark:text-slate-300">Qarz</span>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={formatNumberInput(paymentDebt)}
-                  onChange={(e) => setPaymentDebt(e.target.value)}
-                  onBlur={() => setPaymentDebt(formatNumberInput(paymentDebt))}
-                  onFocus={() => setPaymentDebt(String(parseNumberInput(paymentDebt) || ''))}
-                  className="mt-2 w-full rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-4 py-3"
-                />
-              </label>
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+          <Button variant="secondary" onClick={close} disabled={processing}>Orqaga</Button>
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={handleSaveClick} disabled={processing}>Saqlash</Button>
+            <Button onClick={() => setShowPayment(true)} disabled={processing}>To'lash</Button>
+          </div>
+        </div>
+
+        {showPayment && (
+          <div className="space-y-6">
+            <div className="grid gap-4 sm:grid-cols-3">
+              <Field as="input" label="Naqd" inputProps={numInputProps(paymentCash, setPaymentCash)} />
+              <Field as="input" label="Karta" inputProps={numInputProps(paymentCard, setPaymentCard)} />
+              <Field as="input" label="Qarz" inputProps={numInputProps(paymentDebt, setPaymentDebt)} />
             </div>
 
             {parseNumberInput(paymentDebt) > 0 && (
-              <div className="mt-6 rounded-3xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-4">
+              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
                 <p className="text-sm text-slate-500 dark:text-slate-400">Qarzdor tanlang</p>
-                <div ref={debtorDropdownRef} className="mt-3 relative">
+                <div ref={debtorDropdownRef} className="relative mt-3">
                   <input
                     type="text"
                     value={debtorSearch}
@@ -496,7 +451,7 @@ const SessionDialog = ({ computer, products, close, onStart, onSave, onComplete,
                     }}
                     onFocus={() => setDebtorDropdownOpen(true)}
                     placeholder="Ism yoki telefon bo‘yicha qidiring"
-                    className="w-full rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-4 py-3"
+                    className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
                   />
                   {debtorDropdownOpen && (
                     <div className="absolute left-0 right-0 z-10 max-h-64 overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-950">
@@ -529,17 +484,15 @@ const SessionDialog = ({ computer, products, close, onStart, onSave, onComplete,
               </div>
             )}
 
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
-              <button onClick={() => setShowPayment(false)} disabled={processing} className="rounded-2xl border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-5 py-3 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700">Orqaga</button>
-              <button onClick={handleConfirmPayment} disabled={processing} className="rounded-2xl bg-sky-600 dark:bg-sky-700 px-5 py-3 text-sm font-semibold text-white hover:bg-sky-500 dark:hover:bg-sky-600">Toʻlovni yakunlash</button>
+            <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+              <Button variant="secondary" onClick={() => setShowPayment(false)} disabled={processing}>Orqaga</Button>
+              <Button onClick={handleConfirmPayment} disabled={processing}>Toʻlovni yakunlash</Button>
             </div>
           </div>
-          )}
-        </div>
+        )}
       </div>
-    </div>
+    </Modal>
   )
 }
 
 export default SessionDialog
-

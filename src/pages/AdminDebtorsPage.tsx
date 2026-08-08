@@ -6,6 +6,13 @@ import { formatCurrency, formatNumberInput, formatPhoneNumber, parseNumberInput 
 import { parseError } from '../utils/error'
 import PhoneInput from '../components/common/PhoneInput'
 import { useToast } from '../components/common/Toast'
+import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
+import Card from '../components/ui/Card'
+import Field from '../components/ui/Field'
+import Button from '../components/ui/Button'
+import Badge from '../components/ui/Badge'
+import Modal from '../components/ui/Modal'
+import EmptyState from '../components/ui/EmptyState'
 
 const emptyForm = { first_name: '', last_name: '', phone: '', total_debt: '', note: '' }
 
@@ -109,7 +116,7 @@ const AdminDebtorsPage = () => {
       if (note) {
         payload.note = note
       }
-      
+
       await api.updateAdminDebtor(editingDebtor.id, payload)
       setEditingDebtor(null)
       toast.success('Qarzdor ma\'lumotlari yangilandi')
@@ -163,34 +170,39 @@ const AdminDebtorsPage = () => {
     }
   }
 
-  const inputClass = 'rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100'
+  const numberProps = (value: string, setter: (v: string) => void) => ({
+    value: formatNumberInput(value),
+    onChange: (e: any) => setter(e.target.value),
+    onFocus: () => setter(String(parseNumberInput(value) || '')),
+    onBlur: () => setter(formatNumberInput(value)),
+  })
 
   return (
     <Layout>
       <div className="space-y-6">
-        <section className="rounded-3xl bg-white p-6 shadow-soft dark:bg-slate-900">
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Qarzdor boshqaruvi</h2>
-          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Admin panelidan qarzdorlarni qo'shing, tahrirlang va tarixini ko'ring.</p>
-          <div className="mt-6 grid gap-4 md:grid-cols-4">
-            <input value={form.first_name} onChange={(e) => setForm((p) => ({ ...p, first_name: e.target.value }))} placeholder="Ism *" className={inputClass} />
-            <input value={form.last_name} onChange={(e) => setForm((p) => ({ ...p, last_name: e.target.value }))} placeholder="Familiya" className={inputClass} />
-            <PhoneInput value={form.phone} onChange={(v) => setForm((p) => ({ ...p, phone: v }))} />
-            <input type="text" value={formatNumberInput(form.total_debt)} onChange={(e) => setForm((p) => ({ ...p, total_debt: e.target.value }))} onBlur={() => setForm((p) => ({ ...p, total_debt: formatNumberInput(p.total_debt) }))} onFocus={() => setForm((p) => ({ ...p, total_debt: String(parseNumberInput(p.total_debt) || '') }))} placeholder="Jami qarz" className={inputClass} />
-            <textarea value={form.note} onChange={(e) => setForm((p) => ({ ...p, note: e.target.value }))} placeholder="Izoh" className={`${inputClass} md:col-span-4`} />
-            <button onClick={createDebtor} className="md:col-span-4 rounded-2xl bg-sky-600 px-5 py-3 text-sm font-semibold text-white hover:bg-sky-500">Qarzdor qo'shish</button>
+        <Card
+          title="Qarzdor boshqaruvi"
+          subtitle="Admin panelidan qarzdorlarni qo'shing, tahrirlang va tarixini ko'ring."
+        >
+          <div className="mt-2 grid gap-4 md:grid-cols-4">
+            <Field as="input" inputProps={{ value: form.first_name, onChange: (e: any) => setForm((p) => ({ ...p, first_name: e.target.value })), placeholder: 'Ism *' }} />
+            <Field as="input" inputProps={{ value: form.last_name, onChange: (e: any) => setForm((p) => ({ ...p, last_name: e.target.value })), placeholder: 'Familiya' }} />
+            <div>
+              <PhoneInput value={form.phone} onChange={(v) => setForm((p) => ({ ...p, phone: v }))} />
+            </div>
+            <Field as="input" inputProps={{ type: 'text', ...numberProps(form.total_debt, (v) => setForm((p) => ({ ...p, total_debt: v }))), placeholder: 'Jami qarz' }} />
+            <Field as="textarea" className="md:col-span-4" inputProps={{ value: form.note, onChange: (e: any) => setForm((p) => ({ ...p, note: e.target.value })), placeholder: 'Izoh' }} />
+            <Button onClick={createDebtor} className="md:col-span-4">Qarzdor qo'shish</Button>
           </div>
-        </section>
+        </Card>
 
-        <section className="rounded-3xl bg-white p-6 shadow-soft dark:bg-slate-900">
-          <div className="flex items-center justify-between gap-4">
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Qarzdorlar ro'yxati</h3>
-            <button onClick={openArchive} className="rounded-2xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
-              Arxiv
-            </button>
-          </div>
-          <div className="mt-6 overflow-x-auto">
+        <Card
+          title="Qarzdorlar ro'yxati"
+          actions={<Button variant="secondary" onClick={openArchive}>Arxiv</Button>}
+        >
+          <div className="mt-2 overflow-x-auto">
             <div className="mb-4 flex items-center gap-3">
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Ism, telefon bo'yicha izlash" className={`${inputClass} max-w-sm`} />
+              <Field as="input" className="max-w-sm" inputProps={{ value: search, onChange: (e: any) => setSearch(e.target.value), placeholder: "Ism, telefon bo'yicha izlash" }} />
             </div>
             <table className="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-slate-700">
               <thead className="bg-slate-50 dark:bg-slate-800">
@@ -203,132 +215,123 @@ const AdminDebtorsPage = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 bg-white dark:divide-slate-700 dark:bg-slate-900">
-                {debtors.map((debtor) => (
-                  <tr key={debtor.id} className="text-slate-700 dark:text-slate-200">
-                    <td className="px-4 py-4"><button onClick={() => openDebtorDetails(debtor)} className="font-semibold text-sky-600 hover:text-sky-500 hover:underline dark:text-sky-300">{debtor.full_name}</button></td>
-                    <td className="px-4 py-4">{formatPhoneNumber(debtor.phone)}</td>
-                    <td className="px-4 py-4"><span className={`inline-block rounded-full px-3 py-1 text-sm font-semibold ${Number(debtor.total_debt) > 0 ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-200' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200'}`}>{formatCurrency(Number(debtor.total_debt))}</span></td>
-                    <td className="max-w-xs truncate px-4 py-4 text-slate-500 dark:text-slate-400">{debtor.note || '-'}</td>
-                    <td className="px-4 py-4">
-                        <button onClick={() => startEdit(debtor)} title="Tahrirlash" className="rounded-full border border-slate-300 bg-white p-2 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-800">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                          </svg>
-                        </button>
-                        <button onClick={() => setConfirmDelete(debtor)} title="O'chirish" className="rounded-full bg-rose-500 p-2 text-white hover:bg-rose-400">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1H10a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
+                {debtors.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-10">
+                      <EmptyState message="Qarzdorlar topilmadi." />
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  debtors.map((debtor) => (
+                    <tr key={debtor.id} className="text-slate-700 dark:text-slate-200">
+                      <td className="px-4 py-4"><button onClick={() => openDebtorDetails(debtor)} className="font-semibold text-emerald-600 hover:text-emerald-500 hover:underline dark:text-emerald-300">{debtor.full_name}</button></td>
+                      <td className="px-4 py-4">{formatPhoneNumber(debtor.phone)}</td>
+                      <td className="px-4 py-4"><Badge tone={Number(debtor.total_debt) > 0 ? 'rose' : 'emerald'}>{formatCurrency(Number(debtor.total_debt))}</Badge></td>
+                      <td className="max-w-xs truncate px-4 py-4 text-slate-500 dark:text-slate-400">{debtor.note || '-'}</td>
+                      <td className="px-4 py-4">
+                        <div className="flex gap-2">
+                          <IconButton onClick={() => startEdit(debtor)} title="Tahrirlash" variant="ghost" icon={<PencilIcon className="h-4 w-4" />} />
+                          <IconButton onClick={() => setConfirmDelete(debtor)} title="O'chirish" variant="danger" icon={<TrashIcon className="h-4 w-4" />} />
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
-        </section>
+        </Card>
 
-        {editingDebtor && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4">
-            <div className="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-xl dark:bg-slate-900">
-              <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Qarzdorni tahrirlash</h2>
-              <div className="mt-5 grid gap-4 md:grid-cols-2">
-                <input value={editForm.first_name} onChange={(e) => setEditForm((p) => ({ ...p, first_name: e.target.value }))} className={inputClass} placeholder="Ism" />
-                <input value={editForm.last_name} onChange={(e) => setEditForm((p) => ({ ...p, last_name: e.target.value }))} className={inputClass} placeholder="Familiya" />
-                <PhoneInput value={editForm.phone} onChange={(v) => setEditForm((p) => ({ ...p, phone: v }))} />
-                <input value={formatNumberInput(editForm.total_debt)} onChange={(e) => setEditForm((p) => ({ ...p, total_debt: e.target.value }))} onFocus={() => setEditForm((p) => ({ ...p, total_debt: String(parseNumberInput(p.total_debt) || '') }))} onBlur={() => setEditForm((p) => ({ ...p, total_debt: formatNumberInput(p.total_debt) }))} className={inputClass} placeholder="Qarz summasi" />
-                <textarea value={editForm.note} onChange={(e) => setEditForm((p) => ({ ...p, note: e.target.value }))} className={`${inputClass} md:col-span-2`} placeholder="Izoh" />
-              </div>
-              <div className="mt-6 flex justify-end gap-3">
-                <div className="flex gap-2">
-                  <button onClick={() => setEditingDebtor(null)} className="rounded-2xl border border-slate-300 px-5 py-3 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">Bekor qilish</button>
-                  <button onClick={saveEdit} className="rounded-2xl bg-sky-600 px-5 py-3 text-sm font-semibold text-white hover:bg-sky-500">Saqlash</button>
-                </div>
-              </div>
+        <Modal
+          open={!!editingDebtor}
+          onClose={() => setEditingDebtor(null)}
+          title="Qarzdorni tahrirlash"
+          footer={
+            <div className="flex justify-end gap-3">
+              <Button variant="secondary" onClick={() => setEditingDebtor(null)}>Bekor qilish</Button>
+              <Button onClick={saveEdit}>Saqlash</Button>
             </div>
+          }
+        >
+          <div className="mt-2 grid gap-4 md:grid-cols-2">
+            <Field as="input" inputProps={{ value: editForm.first_name, onChange: (e: any) => setEditForm((p) => ({ ...p, first_name: e.target.value })), placeholder: 'Ism' }} />
+            <Field as="input" inputProps={{ value: editForm.last_name, onChange: (e: any) => setEditForm((p) => ({ ...p, last_name: e.target.value })), placeholder: 'Familiya' }} />
+            <div>
+              <PhoneInput value={editForm.phone} onChange={(v) => setEditForm((p) => ({ ...p, phone: v }))} />
+            </div>
+            <Field as="input" inputProps={{ value: formatNumberInput(editForm.total_debt), onChange: (e: any) => setEditForm((p) => ({ ...p, total_debt: e.target.value })), onFocus: () => setEditForm((p) => ({ ...p, total_debt: String(parseNumberInput(p.total_debt) || '') })), onBlur: () => setEditForm((p) => ({ ...p, total_debt: formatNumberInput(p.total_debt) })), placeholder: 'Qarz summasi' }} />
+            <Field as="textarea" className="md:col-span-2" inputProps={{ value: editForm.note, onChange: (e: any) => setEditForm((p) => ({ ...p, note: e.target.value })), placeholder: 'Izoh' }} />
           </div>
-        )}
+        </Modal>
 
-        {selectedDebtor && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4">
-            <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-xl dark:bg-slate-900">
-              <div className="mb-6 flex items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{selectedDebtor.full_name}</h2>
-                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Telefon: {formatPhoneNumber(selectedDebtor.phone)}</p>
-                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Jami qarz: {formatCurrency(Number(selectedDebtor.total_debt))}</p>
-                  {selectedDebtor.note && <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{selectedDebtor.note}</p>}
-                </div>
-                <button onClick={() => setSelectedDebtor(null)} className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200">Yopish</button>
-              </div>
-              <div className="border-t border-slate-200 pt-6 dark:border-slate-700">
-                <h3 className="mb-4 font-semibold text-slate-900 dark:text-slate-100">To'lov tarixi</h3>
-                {loadingHistory ? <p className="text-sm text-slate-500 dark:text-slate-400">Tarix yuklanmoqda...</p> : history.length === 0 ? <p className="text-sm text-slate-500 dark:text-slate-400">To'lov tarixi yo'q</p> : (
-                  <div className="space-y-3">
-                    {history.map((transaction) => (
-                      <div key={transaction.id} className="flex items-center justify-between rounded-2xl bg-slate-50 p-4 dark:bg-slate-800">
-                        <div>
-                          <p className="font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(Math.abs(Number(transaction.amount)))}</p>
-                          <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">Naqd: {transaction.payment_cash ? formatCurrency(Number(transaction.payment_cash)) : '0'} | Karta: {transaction.payment_card ? formatCurrency(Number(transaction.payment_card)) : '0'}</p>
-                          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{new Date(transaction.created_at).toLocaleString('uz-UZ')}</p>
-                        </div>
-                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${Number(transaction.amount) < 0 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-200' : 'bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-200'}`}>{Number(transaction.amount) < 0 ? "To'lov" : 'Qarz'}</span>
+        <Modal
+          open={!!selectedDebtor}
+          onClose={() => setSelectedDebtor(null)}
+          title={selectedDebtor?.full_name ?? 'Qarzdor'}
+          subtitle={`Telefon: ${formatPhoneNumber(selectedDebtor?.phone ?? '')} | Jami qarz: ${formatCurrency(Number(selectedDebtor?.total_debt ?? 0))}`}
+        >
+          <div className="mt-2">
+            {selectedDebtor?.note && <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">{selectedDebtor.note}</p>}
+            <div className="border-t border-slate-200 pt-6 dark:border-slate-700">
+              <h3 className="mb-4 font-semibold text-slate-900 dark:text-slate-100">To'lov tarixi</h3>
+              {loadingHistory ? <p className="text-sm text-slate-500 dark:text-slate-400">Tarix yuklanmoqda...</p> : history.length === 0 ? <p className="text-sm text-slate-500 dark:text-slate-400">To'lov tarixi yo'q</p> : (
+                <div className="space-y-3">
+                  {history.map((transaction) => (
+                    <div key={transaction.id} className="flex items-center justify-between rounded-2xl bg-slate-50 p-4 dark:bg-slate-800">
+                      <div>
+                        <p className="font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(Math.abs(Number(transaction.amount)))}</p>
+                        <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">Naqd: {transaction.payment_cash ? formatCurrency(Number(transaction.payment_cash)) : '0'} | Karta: {transaction.payment_card ? formatCurrency(Number(transaction.payment_card)) : '0'}</p>
+                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{new Date(transaction.created_at).toLocaleString('uz-UZ')}</p>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-        {confirmDelete && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4">
-            <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-xl dark:bg-slate-900">
-              <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Qarzdorni o'chirish</h3>
-              <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
-                <span className="font-semibold text-slate-900 dark:text-slate-100">{confirmDelete.full_name}</span> qarzdorni arxivga o'tkazishni tasdiqlaysizmi? Uning qarz tarixi saqlanib qoladi va istalgan vaqtda arxivdan qaytarilishi mumkin.
-              </p>
-              <div className="mt-6 flex justify-end gap-3">
-                <button onClick={() => setConfirmDelete(null)} className="rounded-2xl border border-slate-300 px-5 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
-                  Orqaga
-                </button>
-                <button onClick={() => deleteDebtor(confirmDelete.id)} className="rounded-2xl bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-rose-500">
-                  Tasdiqlash
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-        {showArchive && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4">
-            <div className="flex max-h-[90vh] w-full max-w-3xl flex-col rounded-3xl bg-white p-6 shadow-xl dark:bg-slate-900">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Arxivdagi qarzdorlar</h3>
-                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">O'chirilgan qarzdorlar. Tarixlari saqlanadi va istalgan vaqtda qaytarilishi mumkin.</p>
+                      <Badge tone={Number(transaction.amount) < 0 ? 'emerald' : 'rose'}>{Number(transaction.amount) < 0 ? "To'lov" : 'Qarz'}</Badge>
+                    </div>
+                  ))}
                 </div>
-                <button onClick={() => setShowArchive(false)} className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200">Yopish</button>
-              </div>
-              <div className="mt-4 min-h-0 flex-1 overflow-y-auto">
-                {archivedDebtors.length === 0 ? (
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Arxivda qarzdorlar yo'q.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {archivedDebtors.map((debtor) => (
-                      <div key={debtor.id} className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
-                        <div>
-                          <p className="font-semibold text-slate-900 dark:text-slate-100">{debtor.full_name}</p>
-                          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{formatPhoneNumber(debtor.phone)} | {formatCurrency(Number(debtor.total_debt))}</p>
-                        </div>
-                        <button onClick={() => restoreDebtor(debtor.id)} className="rounded-2xl border border-sky-300 bg-sky-50 px-4 py-2 text-sm font-medium text-sky-600 hover:bg-sky-100 dark:border-sky-700 dark:bg-sky-950/40 dark:text-sky-300">Qaytarish</button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              )}
             </div>
           </div>
-        )}
+        </Modal>
+
+        <Modal
+          open={!!confirmDelete}
+          onClose={() => setConfirmDelete(null)}
+          title="Qarzdorni o'chirish"
+          footer={
+            <div className="flex justify-end gap-3">
+              <Button variant="secondary" onClick={() => setConfirmDelete(null)}>Orqaga</Button>
+              <Button variant="danger" onClick={() => deleteDebtor(confirmDelete.id)}>Tasdiqlash</Button>
+            </div>
+          }
+        >
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+            <span className="font-semibold text-slate-900 dark:text-slate-100">{confirmDelete?.full_name}</span> qarzdorni arxivga o'tkazishni tasdiqlaysizmi? Uning qarz tarixi saqlanib qoladi va istalgan vaqtda arxivdan qaytarilishi mumkin.
+          </p>
+        </Modal>
+
+        <Modal
+          open={showArchive}
+          onClose={() => setShowArchive(false)}
+          title="Arxivdagi qarzdorlar"
+          subtitle="O'chirilgan qarzdorlar. Tarixlari saqlanadi va istalgan vaqtda qaytarilishi mumkin."
+        >
+          <div className="mt-2 min-h-0 flex-1 overflow-y-auto">
+            {archivedDebtors.length === 0 ? (
+              <EmptyState message="Arxivda qarzdorlar yo'q." />
+            ) : (
+              <div className="space-y-3">
+                {archivedDebtors.map((debtor) => (
+                  <div key={debtor.id} className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+                    <div>
+                      <p className="font-semibold text-slate-900 dark:text-slate-100">{debtor.full_name}</p>
+                      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{formatPhoneNumber(debtor.phone)} | {formatCurrency(Number(debtor.total_debt))}</p>
+                    </div>
+                    <Button variant="secondary" onClick={() => restoreDebtor(debtor.id)}>Qaytarish</Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </Modal>
       </div>
     </Layout>
   )

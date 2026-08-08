@@ -3,6 +3,13 @@ import Layout from '../components/common/Layout'
 import { useToast } from '../components/common/Toast'
 import api from '../services/api'
 import { formatCurrency, formatNumberInput, parseNumberInput } from '../utils/format'
+import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
+import Card from '../components/ui/Card'
+import Field from '../components/ui/Field'
+import Button from '../components/ui/Button'
+import IconButton from '../components/common/IconButton'
+import Badge from '../components/ui/Badge'
+import EmptyState from '../components/ui/EmptyState'
 
 const AdminProductsPage = () => {
   const [products, setProducts] = useState<any[]>([])
@@ -68,48 +75,59 @@ const AdminProductsPage = () => {
     await load()
   }
 
-  const inputClass = 'mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100'
+  const numberProps = (value: string, setter: (v: string) => void) => ({
+    type: 'text',
+    value: formatNumberInput(value),
+    onChange: (e: any) => setter(e.target.value),
+    onFocus: () => setter(String(parseNumberInput(value) || '')),
+    onBlur: () => setter(formatNumberInput(value)),
+  })
 
   return (
     <Layout>
       <div className="space-y-6">
-        <section className="rounded-3xl bg-white p-6 shadow-soft dark:bg-slate-900">
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Mahsulot boshqaruvi</h2>
-          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Ombor soni, umumiy xarid summasi va sotish narxini kiriting. Tan narx avtomatik hisoblanadi.</p>
-          <div className="mt-6 grid gap-4 md:grid-cols-4">
-            <label className="block md:col-span-2"><span className="text-sm text-slate-600 dark:text-slate-300">Mahsulot nomi</span><input value={name} onChange={(e) => setName(e.target.value)} className={inputClass} /></label>
-            <label className="block"><span className="text-sm text-slate-600 dark:text-slate-300">Umumiy soni</span><input type="text" value={formatNumberInput(quantity)} onChange={(e) => setQuantity(e.target.value)} onFocus={() => setQuantity(String(parseNumberInput(quantity) || ''))} onBlur={() => setQuantity(formatNumberInput(quantity))} className={inputClass} /></label>
-            <label className="block"><span className="text-sm text-slate-600 dark:text-slate-300">Umumiy xarid summasi</span><input type="text" value={formatNumberInput(purchaseTotal)} onChange={(e) => setPurchaseTotal(e.target.value)} onFocus={() => setPurchaseTotal(String(parseNumberInput(purchaseTotal) || ''))} onBlur={() => setPurchaseTotal(formatNumberInput(purchaseTotal))} className={inputClass} /></label>
-            <div className="rounded-3xl bg-blue-50 p-4 dark:bg-blue-950/40"><p className="text-sm text-blue-700 dark:text-blue-200">Tan narx</p><p className="mt-2 text-2xl font-bold text-blue-800 dark:text-blue-100">{formatCurrency(costPrice)}</p></div>
-            <label className="block md:col-span-3"><span className="text-sm text-slate-600 dark:text-slate-300">Sotish narxi</span><input type="text" value={formatNumberInput(price)} onChange={(e) => setPrice(e.target.value)} onBlur={() => setPrice(formatNumberInput(price))} onFocus={() => setPrice(String(parseNumberInput(price) || ''))} placeholder="10 000" className={inputClass} /></label>
-            <button onClick={handleSave} className="md:col-span-4 rounded-2xl bg-sky-600 px-5 py-3 text-sm font-semibold text-white hover:bg-sky-500">{editing ? 'Mahsulotni yangilash' : 'Mahsulot qo\'shish'}</button>
+        <Card
+          title="Mahsulot boshqaruvi"
+          subtitle="Ombor soni, umumiy xarid summasi va sotish narxini kiriting. Tan narx avtomatik hisoblanadi."
+        >
+          <div className="mt-2 grid gap-4 md:grid-cols-4">
+            <Field as="input" label="Mahsulot nomi" className="md:col-span-2" inputProps={{ value: name, onChange: (e: any) => setName(e.target.value) }} />
+            <Field as="input" label="Umumiy soni" inputProps={numberProps(quantity, setQuantity)} />
+            <Field as="input" label="Umumiy xarid summasi" inputProps={numberProps(purchaseTotal, setPurchaseTotal)} />
+            <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-950/40">
+              <p className="text-sm text-emerald-700 dark:text-emerald-300">Tan narx</p>
+              <p className="mt-2 text-2xl font-bold text-emerald-800 dark:text-emerald-100">{formatCurrency(costPrice)}</p>
+            </div>
+            <Field as="input" label="Sotish narxi" className="md:col-span-3" inputProps={{ ...numberProps(price, setPrice), placeholder: '10 000' }} />
+            <Button onClick={handleSave} className="md:col-span-4">{editing ? 'Mahsulotni yangilash' : "Mahsulot qo'shish"}</Button>
           </div>
-        </section>
-        <section className="rounded-3xl bg-white p-6 shadow-soft dark:bg-slate-900">
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Mahsulotlar ro'yxati</h3>
-          <div className="mt-6 space-y-3">
-            {products.map((product) => (
-              <div key={product.id} className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:bg-slate-800">
-                <div>
-                  <p className="text-base font-semibold text-slate-900 dark:text-slate-100">{product.name}</p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Qolgan: <span className="font-medium">{product.quantity ?? 0} dona</span> | Sotish: <span className="font-semibold text-blue-600 dark:text-blue-300">{formatCurrency(Number(product.price))}</span> | Tan narx: {formatCurrency(Number(product.cost_price ?? 0))}</p>
+        </Card>
+
+        <Card title="Mahsulotlar ro'yxati">
+          {products.length === 0 ? (
+            <EmptyState message="Hozircha mahsulotlar yo'q." />
+          ) : (
+            <div className="mt-2 space-y-3">
+              {products.map((product) => (
+                <div key={product.id} className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:bg-slate-800">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-base font-semibold text-slate-900 dark:text-slate-100">{product.name}</p>
+                      <Badge tone="slate">{product.quantity ?? 0} dona</Badge>
+                    </div>
+                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                      Sotish: <span className="font-semibold text-emerald-600 dark:text-emerald-300">{formatCurrency(Number(product.price))}</span> | Tan narx: {formatCurrency(Number(product.cost_price ?? 0))}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <IconButton onClick={() => startEdit(product)} title="Tahrirlash" variant="ghost" icon={<PencilIcon className="h-4 w-4" />} />
+                    <IconButton onClick={() => remove(product.id)} title="O'chirish" variant="danger" icon={<TrashIcon className="h-4 w-4" />} />
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <button onClick={() => startEdit(product)} title="Tahrirlash" className="rounded-full border border-slate-300 bg-white p-2 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-800">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                    </svg>
-                  </button>
-                  <button onClick={() => remove(product.id)} title="O'chirish" className="rounded-full bg-rose-500 p-2 text-white hover:bg-rose-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1H10a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+              ))}
+            </div>
+          )}
+        </Card>
       </div>
     </Layout>
   )

@@ -2,10 +2,14 @@ import { FormEvent, useEffect, useMemo, useState } from 'react'
 import Layout from '../components/common/Layout'
 import api from '../services/api'
 import { FetchProduct, FetchProductSale } from '../types'
-import { formatCurrency, formatNumberInput, parseNumberInput } from '../utils/format'
+import { formatCurrency, formatNumberInput, parseNumberInput, todayUz } from '../utils/format'
 import { useToast } from '../components/common/Toast'
+import Card from '../components/ui/Card'
+import Field from '../components/ui/Field'
+import Button from '../components/ui/Button'
+import EmptyState from '../components/ui/EmptyState'
 
-const today = new Date().toISOString().slice(0, 10)
+const today = todayUz()
 
 const SalesPage = () => {
   const [products, setProducts] = useState<FetchProduct[]>([])
@@ -30,7 +34,6 @@ const SalesPage = () => {
 
   const product = useMemo(() => products.find((item) => item.id === selectedProduct), [products, selectedProduct])
   const totalAmount = product ? product.price * quantity : 0
-  const inputClass = 'mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100'
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -54,50 +57,78 @@ const SalesPage = () => {
   return (
     <Layout>
       <div className="space-y-6">
-        <div className="rounded-3xl bg-white p-6 shadow-soft dark:bg-slate-900">
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Mahsulot savdosi</h2>
-          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">User tomonda mahsulot nomi, qolgan soni va sotish narxi ko'rinadi.</p>
-          <form onSubmit={handleSubmit} className="mt-6 grid gap-4 md:grid-cols-2">
-            <label className="block"><span className="text-sm text-slate-600 dark:text-slate-300">Mahsulot</span><select value={selectedProduct ?? ''} onChange={(e) => setSelectedProduct(Number(e.target.value))} className={inputClass} required><option value="" disabled>Mahsulotni tanlang</option>{products.filter((p) => (p.quantity ?? 0) > 0).map((item) => <option key={item.id} value={item.id}>{item.name} | {item.quantity} dona | {formatCurrency(item.price)}</option>)}</select></label>
-            <label className="block"><span className="text-sm text-slate-600 dark:text-slate-300">Miqdori</span><input type="number" min={1} value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} className={inputClass} /></label>
-            <label className="block">
-              <span className="text-sm text-slate-600 dark:text-slate-300">Naqd pul</span>
-              <input
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9\s,]*"
-                value={cash}
-                onChange={(e) => setCash(formatNumberInput(e.target.value))}
-                className={inputClass}
-                placeholder="0"
-              />
-            </label>
-            <label className="block">
-              <span className="text-sm text-slate-600 dark:text-slate-300">Karta</span>
-              <input
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9\s,]*"
-                value={card}
-                onChange={(e) => setCard(formatNumberInput(e.target.value))}
-                className={inputClass}
-                placeholder="0"
-              />
-            </label>
-            <div className="rounded-3xl bg-blue-50 p-4 md:col-span-2 dark:bg-blue-950/40"><p className="text-sm text-blue-700 dark:text-blue-200">Jami</p><p className="mt-2 text-3xl font-semibold text-blue-800 dark:text-blue-100">{formatCurrency(totalAmount)}</p></div>
-            <button type="submit" disabled={loading} className="rounded-2xl bg-sky-600 px-5 py-3 text-sm font-semibold text-white hover:bg-sky-500 md:col-span-2 disabled:opacity-60">Savdoni saqlash</button>
+        <Card title="Mahsulot savdosi" subtitle="User tomonda mahsulot nomi, qolgan soni va sotish narxi ko'rinadi.">
+          <form onSubmit={handleSubmit} className="mt-2 grid gap-4 md:grid-cols-2">
+            <Field
+              as="select"
+              label="Mahsulot"
+              inputProps={{ value: selectedProduct ?? '', onChange: (e: any) => setSelectedProduct(Number(e.target.value)), required: true }}
+            >
+              <option value="" disabled>Mahsulotni tanlang</option>
+              {products.filter((p) => (p.quantity ?? 0) > 0).map((item) => (
+                <option key={item.id} value={item.id}>{item.name} | {item.quantity} dona | {formatCurrency(item.price)}</option>
+              ))}
+            </Field>
+            <Field
+              as="input"
+              label="Miqdori"
+              inputProps={{ type: 'number', min: 1, value: quantity, onChange: (e: any) => setQuantity(Number(e.target.value)) }}
+            />
+            <Field
+              as="input"
+              label="Naqd pul"
+              inputProps={{
+                type: 'text',
+                inputMode: 'numeric',
+                pattern: '[0-9\\s,]*',
+                value: cash,
+                onChange: (e: any) => setCash(formatNumberInput(e.target.value)),
+                placeholder: '0',
+              }}
+            />
+            <Field
+              as="input"
+              label="Karta"
+              inputProps={{
+                type: 'text',
+                inputMode: 'numeric',
+                pattern: '[0-9\\s,]*',
+                value: card,
+                onChange: (e: any) => setCard(formatNumberInput(e.target.value)),
+                placeholder: '0',
+              }}
+            />
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-950/40 md:col-span-2">
+              <p className="text-sm text-emerald-600 dark:text-emerald-300">Jami</p>
+              <p className="mt-2 text-3xl font-semibold text-emerald-800 dark:text-emerald-100">{formatCurrency(totalAmount)}</p>
+            </div>
+            <Button type="submit" isLoading={loading} className="md:col-span-2">
+              Savdoni saqlash
+            </Button>
           </form>
-        </div>
-        <div className="rounded-3xl bg-white p-6 shadow-soft dark:bg-slate-900">
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Bugungi sotuvlar</h3>
-          <div className="mt-4 space-y-3">
-            {sales.length === 0 ? <p className="text-sm text-slate-500 dark:text-slate-400">Bugun sotuvlar mavjud emas.</p> : sales.map((s) => {
-              const unitPrice = Number(s.unit_price ?? s.total_amount / Math.max(1, s.quantity))
-              const created = s.created_at ? new Date(s.created_at) : null
-              return <div key={s.sale_key ?? s.id} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800"><div><p className="font-semibold text-slate-900 dark:text-slate-100">{s.product_name ?? `Mahsulot #${s.product_id}`}</p><p className="text-sm text-slate-500 dark:text-slate-400">{s.quantity} ta | {formatCurrency(unitPrice)}</p></div><div className="text-sm text-slate-500 dark:text-slate-400">{created ? created.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' }) : '-'}</div></div>
-            })}
-          </div>
-        </div>
+        </Card>
+
+        <Card title="Bugungi sotuvlar">
+          {sales.length === 0 ? (
+            <EmptyState message="Bugun sotuvlar mavjud emas." />
+          ) : (
+            <div className="mt-4 space-y-3">
+              {sales.map((s) => {
+                const unitPrice = Number(s.unit_price ?? s.total_amount / Math.max(1, s.quantity))
+                const created = s.created_at ? new Date(s.created_at) : null
+                return (
+                  <div key={s.sale_key ?? s.id} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+                    <div>
+                      <p className="font-semibold text-slate-900 dark:text-slate-100">{s.product_name ?? `Mahsulot #${s.product_id}`}</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">{s.quantity} ta | {formatCurrency(unitPrice)}</p>
+                    </div>
+                    <div className="text-sm text-slate-500 dark:text-slate-400">{created ? created.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' }) : '-'}</div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </Card>
       </div>
     </Layout>
   )

@@ -2,6 +2,11 @@ import { ChangeEvent, ClipboardEvent, DragEvent, FormEvent, useEffect, useState 
 import Layout from '../components/common/Layout'
 import api from '../services/api'
 import { formatCurrency } from '../utils/format'
+import Card from '../components/ui/Card'
+import Field from '../components/ui/Field'
+import Button from '../components/ui/Button'
+import StatCard from '../components/ui/StatCard'
+import Spinner from '../components/ui/Spinner'
 
 const BASE_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace(/\/$/, '')
 
@@ -128,76 +133,48 @@ const ReportsPage = () => {
   return (
     <Layout>
       <div className="space-y-6">
-        <section className="rounded-3xl bg-white p-6 shadow-soft">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-xl font-semibold text-slate-900">Kunlik hisobot (Kunni yakunlash)</h2>
-              <p className="mt-2 text-sm text-slate-500">Bugungi ish kunini yakunlang, hisobot rasmini yuklang, kamomad va xarajatlarni yozib saqlang.</p>
-            </div>
-          </div>
-          <div className="mt-5">
-            <h3 className="text-lg font-semibold text-slate-900">Bugungi kun statistikasi</h3>
+        <Card title="Kunlik hisobot (Kunni yakunlash)" subtitle="Bugungi ish kunini yakunlang, hisobot rasmini yuklang, kamomad va xarajatlarni yozib saqlang.">
+          <div className="mt-2">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Bugungi kun statistikasi</h3>
             {loadingStats ? (
-              <p className="mt-3 text-sm text-slate-500">Statistika yuklanmoqda...</p>
+              <Spinner label="Statistika yuklanmoqda..." />
             ) : statsError ? (
-              <p className="mt-3 text-sm text-rose-600">{statsError}</p>
+              <p className="mt-3 text-sm text-rose-600 dark:text-rose-400">{statsError}</p>
             ) : (
               <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="rounded-3xl bg-slate-50 p-4">
-                  <p className="text-sm text-slate-500">Bugungi umumiy tushum</p>
-                  <p className="mt-2 text-2xl font-semibold text-slate-900">{formatCurrency(Number(statistics?.total_revenue ?? 0))}</p>
-                </div>
-                <div className="rounded-3xl bg-slate-50 p-4">
-                  <p className="text-sm text-slate-500">Naqd pul</p>
-                  <p className="mt-2 text-2xl font-semibold text-slate-900">{formatCurrency(Number(statistics?.total_cash ?? 0))}</p>
-                </div>
-                <div className="rounded-3xl bg-slate-50 p-4">
-                  <p className="text-sm text-slate-500">Karta</p>
-                  <p className="mt-2 text-2xl font-semibold text-slate-900">{formatCurrency(Number(statistics?.total_card ?? 0))}</p>
-                </div>
-                <div className="rounded-3xl bg-slate-50 p-4">
-                  <p className="text-sm text-slate-500">Qarz</p>
-                  <p className="mt-2 text-2xl font-semibold text-slate-900">{formatCurrency(Number(statistics?.total_debt ?? 0))}</p>
-                </div>
+                <StatCard label="Bugungi umumiy tushum" value={formatCurrency(Number(statistics?.total_revenue ?? 0))} tone="emerald" />
+                <StatCard label="Naqd pul" value={formatCurrency(Number(statistics?.total_cash ?? 0))} />
+                <StatCard label="Karta" value={formatCurrency(Number(statistics?.total_card ?? 0))} tone="amber" />
+                <StatCard label="Qarz" value={formatCurrency(Number(statistics?.total_debt ?? 0))} tone="rose" />
               </div>
             )}
           </div>
+
           <form onSubmit={handleSubmit} className="mt-6 grid gap-4 sm:grid-cols-2">
-            <label className="block">
-              <span className="text-sm text-slate-600">Xarajatlar (chiqimlar summasi)</span>
-              <input
-                type="number"
-                min={0}
-                value={expenses}
-                onChange={(e) => setExpenses(Number(e.target.value))}
-                className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3"
-              />
-            </label>
-            <label className="block">
-              <span className="text-sm text-slate-600">Kamomad summasi (agar boʻlsa)</span>
-              <input
-                type="number"
-                value={cashDifference}
-                onChange={(e) => setCashDifference(Number(e.target.value))}
-                className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3"
-              />
-            </label>
-            <label className="block sm:col-span-2">
-              <span className="text-sm text-slate-600">Kun yakuniga izoh (ixtiyoriy)</span>
-              <textarea
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                placeholder="Kun yakuni haqida qoʻshimcha izohlar..."
-                className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3"
-              />
-            </label>
-            <label className="block sm:col-span-2">
-              <span className="text-sm text-slate-600">Hisobot cheki yoki kassa rasmi (majburiy)</span>
+            <Field
+              as="input"
+              label="Xarajatlar (chiqimlar summasi)"
+              inputProps={{ type: 'number', min: 0, value: expenses, onChange: (e: any) => setExpenses(Number(e.target.value)) }}
+            />
+            <Field
+              as="input"
+              label="Kamomad summasi (agar boʻlsa)"
+              inputProps={{ type: 'number', value: cashDifference, onChange: (e: any) => setCashDifference(Number(e.target.value)) }}
+            />
+            <Field
+              as="textarea"
+              label="Kun yakuniga izoh (ixtiyoriy)"
+              className="sm:col-span-2"
+              inputProps={{ value: comment, onChange: (e: any) => setComment(e.target.value), placeholder: 'Kun yakuni haqida qoʻshimcha izohlar...' }}
+            />
+
+            <div className="sm:col-span-2">
+              <span className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Hisobot cheki yoki kassa rasmi (majburiy)</span>
               <div
                 onDrop={!imageUrl ? handleDrop : undefined}
                 onDragOver={(event) => !imageUrl && event.preventDefault()}
                 onPaste={!imageUrl ? handlePaste : undefined}
-                className={`mt-2 rounded-3xl border-2 p-6 text-center transition ${imageUrl ? 'border-emerald-300 bg-emerald-50' : 'border-dashed border-slate-300 bg-slate-50 hover:bg-slate-100'}`}
+                className={`mt-2 rounded-3xl border-2 p-6 text-center transition ${imageUrl ? 'border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/40' : 'border-dashed border-slate-300 bg-slate-50 hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700'}`}
               >
                 {!imageUrl ? (
                   <>
@@ -205,100 +182,68 @@ const ReportsPage = () => {
                       type="file"
                       accept="image/*"
                       onChange={handleFileChange}
-                      className="mx-auto mb-3 block w-full text-sm text-slate-700 file:mr-4 file:rounded-full file:border-0 file:bg-sky-600 file:px-4 file:py-2 file:text-white"
+                      className="mx-auto mb-3 block w-full text-sm text-slate-700 file:mr-4 file:rounded-full file:border-0 file:bg-emerald-600 file:px-4 file:py-2 file:text-white dark:text-slate-200"
                     />
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
                       Rasmni bu yerga tashlang, buferdan (ctrl+v) yuklang yoki faylni tanlang. JPG, PNG, GIF ruxsat etiladi.
                     </p>
                   </>
                 ) : (
                   <div className="text-center">
-                    <p className="text-sm font-medium text-emerald-700">✓ Rasm yuklandi</p>
-                    <p className="mt-1 text-xs text-slate-600">{fileName}</p>
+                    <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">✓ Rasm yuklandi</p>
+                    <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">{fileName}</p>
                     <div className="mt-3 flex justify-center gap-2">
-                      <label className="rounded-2xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-500 cursor-pointer">
+                      <label className="inline-flex cursor-pointer items-center rounded-2xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500">
                         Almashish
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleReplaceImage}
-                          className="hidden"
-                        />
+                        <input type="file" accept="image/*" onChange={handleReplaceImage} className="hidden" />
                       </label>
-                      <button
-                        type="button"
-                        onClick={handleDeleteImage}
-                        className="rounded-2xl bg-rose-500 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-400"
-                      >
-                        O'chirish
-                      </button>
+                      <Button variant="danger" size="sm" onClick={handleDeleteImage}>O'chirish</Button>
                     </div>
                   </div>
                 )}
-                {uploadError && <p className="mt-3 text-sm text-rose-600">{uploadError}</p>}
-                {uploading && <p className="mt-3 text-sm text-slate-500">Rasm yuklanmoqda…</p>}
+                {uploadError && <p className="mt-3 text-sm text-rose-600 dark:text-rose-400">{uploadError}</p>}
+                {uploading && <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">Rasm yuklanmoqda…</p>}
               </div>
-            </label>
+            </div>
+
             {imageUrl && (
               <div className="sm:col-span-2">
-                <p className="mb-3 text-sm text-slate-600 font-medium">Rasm koʻrinishi:</p>
-                <img src={getFullImageUrl(imageUrl)} alt="Report preview" className="w-full rounded-3xl border border-slate-200 object-contain max-h-80 bg-slate-100" />
+                <p className="mb-3 text-sm font-medium text-slate-600 dark:text-slate-300">Rasm koʻrinishi:</p>
+                <img src={getFullImageUrl(imageUrl)} alt="Report preview" className="max-h-80 w-full rounded-3xl border border-slate-200 bg-slate-100 object-contain dark:border-slate-700 dark:bg-slate-800" />
               </div>
             )}
-            <button type="submit" className="rounded-2xl bg-sky-600 px-5 py-3 text-sm font-semibold text-white hover:bg-sky-500 sm:col-span-2">
+
+            <Button type="submit" className="sm:col-span-2">
               Kunlik hisobotni saqlash va Kunni yopish
-            </button>
+            </Button>
           </form>
+
           {status && (
-            <div className={`mt-4 rounded-3xl p-4 text-sm font-medium ${status.includes("muvaffaqiyatli") ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
+            <div className={`mt-4 rounded-3xl p-4 text-sm font-medium ${status.includes("muvaffaqiyatli") ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-200" : "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-200"}`}>
               {status}
             </div>
           )}
-        </section>
+        </Card>
+
         {report && (
-          <section className="rounded-3xl bg-slate-50 p-6 shadow-soft">
-            <h3 className="text-lg font-semibold text-slate-900">Saqlangan kunlik hisobot tafsilotlari</h3>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <div className="rounded-3xl bg-white p-4">
-                <p className="text-sm text-slate-500">Kassa yopilgan sana</p>
-                <p className="mt-2 text-lg font-semibold text-slate-900">{new Date(report.created_at).toLocaleDateString('uz-UZ')}</p>
-              </div>
-              <div className="rounded-3xl bg-white p-4">
-                <p className="text-sm text-slate-500 font-medium text-emerald-600">Umumiy tushum</p>
-                <p className="mt-2 text-xl font-bold text-slate-900">{formatCurrency(Number(report.total_revenue))}</p>
-              </div>
-              <div className="rounded-3xl bg-white p-4">
-                <p className="text-sm text-slate-500">Naqd tushum</p>
-                <p className="mt-2 text-lg font-semibold text-slate-900">{formatCurrency(Number(report.total_cash))}</p>
-              </div>
-              <div className="rounded-3xl bg-white p-4">
-                <p className="text-sm text-slate-500">Karta orqali tushum</p>
-                <p className="mt-2 text-lg font-semibold text-slate-900">{formatCurrency(Number(report.total_card))}</p>
-              </div>
-              <div className="rounded-3xl bg-white p-4">
-                <p className="text-sm text-slate-500 font-medium text-amber-600">Qarzga berilgan</p>
-                <p className="mt-2 text-lg font-semibold text-slate-900">{formatCurrency(Number(report.total_debt))}</p>
-              </div>
-              <div className="rounded-3xl bg-white p-4">
-                <p className="text-sm text-slate-500 font-medium text-rose-600">Kiritilgan xarajatlar</p>
-                <p className="mt-2 text-lg font-semibold text-slate-900">{formatCurrency(Number(report.total_expenses))}</p>
-              </div>
-              <div className="rounded-3xl bg-white p-4">
-                <p className="text-sm text-slate-500 font-medium text-rose-500">Kamomad</p>
-                <p className="mt-2 text-lg font-semibold text-slate-900">{formatCurrency(Number(report.cash_difference))}</p>
-              </div>
-              <div className="rounded-3xl bg-white p-4">
-                <p className="text-sm text-slate-500 font-medium text-teal-600">Chegirmalar jami</p>
-                <p className="mt-2 text-lg font-semibold text-slate-900">{formatCurrency(Number(report.total_discount))}</p>
-              </div>
+          <Card title="Saqlangan kunlik hisobot tafsilotlari" className="bg-slate-50 dark:bg-slate-900">
+            <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <StatCard label="Kassa yopilgan sana" value={new Date(report.created_at).toLocaleDateString('uz-UZ')} />
+              <StatCard label="Umumiy tushum" value={formatCurrency(Number(report.total_revenue))} tone="emerald" />
+              <StatCard label="Naqd tushum" value={formatCurrency(Number(report.total_cash))} tone="sky" />
+              <StatCard label="Karta orqali tushum" value={formatCurrency(Number(report.total_card))} tone="amber" />
+              <StatCard label="Qarzga berilgan" value={formatCurrency(Number(report.total_debt))} tone="rose" />
+              <StatCard label="Kiritilgan xarajatlar" value={formatCurrency(Number(report.total_expenses ?? 0))} tone="indigo" />
+              <StatCard label="Kamomad" value={formatCurrency(Number(report.cash_difference))} tone="teal" />
+              <StatCard label="Chegirmalar jami" value={formatCurrency(Number(report.total_discount))} tone="slate" />
             </div>
             {report.image_url && (
-              <div className="mt-6 rounded-3xl bg-white p-4">
-                <p className="text-sm text-slate-500 font-medium mb-3">Yuklangan chek rasmi:</p>
-                <img src={getFullImageUrl(report.image_url)} alt="Saved report" className="w-full rounded-3xl border border-slate-200 object-contain max-h-96 bg-slate-50" />
+              <div className="mt-6 rounded-3xl bg-white p-4 dark:bg-slate-950">
+                <p className="mb-3 text-sm font-medium text-slate-600 dark:text-slate-300">Yuklangan chek rasmi:</p>
+                <img src={getFullImageUrl(report.image_url)} alt="Saved report" className="max-h-96 w-full rounded-3xl border border-slate-200 bg-slate-50 object-contain dark:border-slate-700 dark:bg-slate-800" />
               </div>
             )}
-          </section>
+          </Card>
         )}
       </div>
     </Layout>

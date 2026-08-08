@@ -1,14 +1,21 @@
 import { useEffect, useMemo, useState } from 'react'
 import Layout from '../components/common/Layout'
-import IconButton from '../components/common/IconButton'
 import api from '../services/api'
 import { FetchProductSale } from '../types'
-import { formatCurrency } from '../utils/format'
+import { formatCurrency, todayUz } from '../utils/format'
+import Card from '../components/ui/Card'
+import Field from '../components/ui/Field'
+import Button from '../components/ui/Button'
+import StatCard from '../components/ui/StatCard'
+import Badge from '../components/ui/Badge'
+import Drawer from '../components/ui/Drawer'
+import EmptyState from '../components/ui/EmptyState'
 
 type Tab = 'daily' | 'monthly' | 'yearly'
+type Tone = 'amber' | 'emerald' | 'sky' | 'rose' | 'slate' | 'indigo' | 'violet' | 'teal'
 
 const AdminDashboardPage = () => {
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayUz()
   const [date, setDate] = useState(today)
   const [startDate, setStartDate] = useState(today)
   const [endDate, setEndDate] = useState(today)
@@ -82,250 +89,225 @@ const AdminDashboardPage = () => {
   const incomeCard = (statistics?.total_card ?? 0)
   const incomeTotal = Number(incomeCash) + Number(incomeCard)
 
-  const cards = [
-    { label: 'Daromad', value: incomeTotal, tone: 'from-amber-500 to-orange-600 dark:from-amber-950 dark:to-orange-950', onClick: () => setDrawer('income') },
-    { label: 'Naqd', value: statistics?.total_cash ?? 0, tone: 'from-emerald-500 to-teal-600 dark:from-emerald-950 dark:to-teal-950' },
-    { label: 'Karta', value: statistics?.total_card ?? 0, tone: 'from-sky-500 to-cyan-600 dark:from-sky-950 dark:to-cyan-950' },
-    { label: 'Qarz', value: statistics?.total_debt ?? 0, tone: 'from-rose-500 to-pink-700 dark:from-rose-950 dark:to-pink-950', onClick: () => { setDebtFilter('all'); setDrawer('debts') } },
-    { label: 'PlayStation', value: statistics?.category_totals?.playstation ?? 0, tone: 'from-violet-500 to-indigo-600 dark:from-violet-950 dark:to-indigo-950' },
-    { label: 'Sotilgan mahsulotlar', value: statistics?.products_revenue ?? 0, tone: 'from-blue-500 to-cyan-700 dark:from-blue-950 dark:to-cyan-950', onClick: () => setDrawer('products') },
-    { label: "Bugungi chegirma", value: statistics?.total_discount ?? 0, tone: 'from-orange-500 to-rose-600 dark:from-orange-950 dark:to-rose-950' },
+  const cards: { label: string; value: any; tone: Tone; onClick?: () => void }[] = [
+    { label: 'Daromad', value: incomeTotal, tone: 'emerald', onClick: () => setDrawer('income') },
+    { label: 'Naqd', value: statistics?.total_cash ?? 0, tone: 'sky' },
+    { label: 'Karta', value: statistics?.total_card ?? 0, tone: 'amber' },
+    { label: 'Qarz', value: statistics?.total_debt ?? 0, tone: 'rose', onClick: () => { setDebtFilter('all'); setDrawer('debts') } },
+    { label: 'PlayStation', value: statistics?.category_totals?.playstation ?? 0, tone: 'violet' },
+    { label: 'Sotilgan mahsulotlar', value: statistics?.products_revenue ?? 0, tone: 'teal', onClick: () => setDrawer('products') },
+    { label: "Bugungi chegirma", value: statistics?.total_discount ?? 0, tone: 'slate' },
   ]
-
-  const inputClass = 'mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100'
 
   return (
     <Layout>
       <div className="space-y-6">
-        <section className="rounded-3xl bg-white p-6 shadow-soft dark:bg-slate-900">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Admin statistikasi</h2>
-              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Kunlik, oylik va yillik daromad, xarajat va foydani kuzating.</p>
-            </div>
+        <Card
+          title="Admin statistikasi"
+          subtitle="Kunlik, oylik va yillik daromad, xarajat va foydani kuzating."
+          actions={
             <div className="flex flex-wrap gap-2">
               {[
                 { key: 'daily' as const, label: 'Kunlik' },
                 { key: 'monthly' as const, label: 'Oylik' },
                 { key: 'yearly' as const, label: 'Yillik' },
               ].map(({ key, label }) => (
-                <button key={key} onClick={() => setTab(key)} className={`rounded-2xl px-4 py-2 text-sm font-medium ${tab === key ? 'bg-sky-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'}`}>{label}</button>
+                <Button key={key} size="sm" variant={tab === key ? 'primary' : 'secondary'} onClick={() => setTab(key)}>
+                  {label}
+                </Button>
               ))}
             </div>
-          </div>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          }
+        >
+          <div className="mt-2 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {tab === 'daily' ? (
               <>
-                <label className="block"><span className="text-sm text-slate-600 dark:text-slate-300">Boshlanish sanasi</span><input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={inputClass} /></label>
-                <label className="block"><span className="text-sm text-slate-600 dark:text-slate-300">Tugash sanasi</span><input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={inputClass} /></label>
+                <Field as="input" label="Boshlanish sanasi" inputProps={{ type: 'date', value: startDate, onChange: (e: any) => setStartDate(e.target.value) }} />
+                <Field as="input" label="Tugash sanasi" inputProps={{ type: 'date', value: endDate, onChange: (e: any) => setEndDate(e.target.value) }} />
               </>
             ) : (
-              <label className="block"><span className="text-sm text-slate-600 dark:text-slate-300">Sanani tanlang</span><input type={inputType} value={tab === 'yearly' ? date.slice(0, 4) : inputValue} onChange={(e) => tab === 'monthly' ? setDate(`${e.target.value}-01`) : tab === 'yearly' ? setDate(`${e.target.value}-01-01`) : setDate(e.target.value)} className={inputClass} /></label>
+              <Field
+                as="input"
+                label="Sanani tanlang"
+                inputProps={{
+                  type: inputType,
+                  value: tab === 'yearly' ? date.slice(0, 4) : inputValue,
+                  onChange: (e: any) => tab === 'monthly' ? setDate(`${e.target.value}-01`) : tab === 'yearly' ? setDate(`${e.target.value}-01-01`) : setDate(e.target.value),
+                }}
+              />
             )}
           </div>
-        </section>
- 
-        <section className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
-          {cards.map((card) => {
-            const content = (
-              <>
-                <p className="text-sm uppercase tracking-[0.18em] text-white/85">{card.label}</p>
-                <p className="mt-4 break-words text-3xl font-bold leading-tight text-white sm:text-4xl max-h-16 overflow-hidden">{formatCurrency(Number(card.value ?? 0))}</p>
-              </>
-            )
-            const base = `min-w-0 rounded-2xl bg-gradient-to-br ${card.tone} p-6 shadow-soft transition-transform duration-200 ease-out hover:-translate-y-1 hover:shadow-lg flex flex-col justify-between h-44`
-            return card.onClick ? (
-              <button key={card.label} onClick={card.onClick} className={base + ' text-left'}>{content}</button>
-            ) : (
-              <div key={card.label} className={base}>{content}</div>
-            )
-          })}
+        </Card>
+
+        <section className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
+          {cards.map((card) => (
+            <StatCard
+              key={card.label}
+              gradient
+              tone={card.tone}
+              label={card.label}
+              value={formatCurrency(Number(card.value ?? 0))}
+              onClick={card.onClick}
+              valueClassName="text-2xl sm:text-3xl"
+            />
+          ))}
         </section>
       </div>
- 
-      {drawer && <button className="fixed inset-0 z-40 bg-slate-950/50" onClick={() => setDrawer(null)} />}
-      {drawer === 'products' && (
-        <aside className="fixed right-0 top-0 z-50 flex h-screen w-full max-w-xl flex-col bg-white shadow-2xl dark:bg-slate-950 animate-slide-in">
-          <div className="shrink-0 border-b border-slate-200 p-6 dark:border-slate-800">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Sotilgan mahsulotlar</h3>
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Bir xil mahsulotlar birlashtirilgan</p>
-              </div>
-              <button onClick={() => setDrawer(null)} className="rounded-2xl border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+
+      <Drawer
+        open={drawer === 'products'}
+        onClose={() => setDrawer(null)}
+        title="Sotilgan mahsulotlar"
+        subtitle="Bir xil mahsulotlar birlashtirilgan"
+        footer={
+          <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+            <div><p className="text-slate-500 dark:text-slate-400">Umumiy son</p><p className="font-bold text-slate-900 dark:text-slate-100">{productsQuantity} ta</p></div>
+            <div><p className="text-slate-500 dark:text-slate-400">Umumiy tan narx</p><p className="font-bold text-slate-900 dark:text-slate-100">{formatCurrency(productsCost)}</p></div>
+            <div><p className="text-slate-500 dark:text-slate-400">Umumiy sotilgan narx</p><p className="font-bold text-emerald-700 dark:text-emerald-200">{formatCurrency(productsTotal)}</p></div>
+            <div><p className="text-slate-500 dark:text-slate-400">Foyda</p><p className="font-bold text-emerald-700 dark:text-emerald-200">{formatCurrency(productsProfit)}</p></div>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto p-6">
-            <div className="space-y-4">
-              {groupedSales.length === 0 ? (
-                <p className="text-sm text-slate-500 dark:text-slate-400">Sotuvlar topilmadi.</p>
-              ) : (
-                groupedSales.map((item) => (
-                  <div key={item.name} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-                    <div className="flex justify-between items-start">
-                      <p className="font-semibold text-slate-900 dark:text-slate-100 text-base">{item.name}</p>
-                      <span className="bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 text-xs px-2.5 py-0.5 rounded-full font-medium">
-                        {item.quantity} ta
-                      </span>
+        }
+      >
+        <div className="space-y-4">
+          {groupedSales.length === 0 ? (
+            <EmptyState message="Sotuvlar topilmadi." />
+          ) : (
+            groupedSales.map((item) => (
+              <div key={item.name} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+                <div className="flex items-start justify-between">
+                  <p className="text-base font-semibold text-slate-900 dark:text-slate-100">{item.name}</p>
+                  <Badge tone="sky">{item.quantity} ta</Badge>
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                  <div>
+                    <p className="font-medium text-slate-400">Sotish narxi (Dona)</p>
+                    <p className="mt-0.5 font-semibold text-slate-800 dark:text-slate-200">{formatCurrency(item.unitPrice)}</p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-slate-400">Tan narxi (Dona)</p>
+                    <p className="mt-0.5 font-semibold text-slate-500 dark:text-slate-400">{formatCurrency(item.costTotal / item.quantity)}</p>
+                  </div>
+                  <div className="col-span-2 mt-1 flex items-center justify-between border-t border-slate-200 pt-2 dark:border-slate-800">
+                    <div>
+                      <span className="font-medium text-slate-400">Jami tushum</span>
+                      <p className="mt-0.5 text-sm font-bold text-blue-600 dark:text-blue-400">{formatCurrency(item.soldTotal)}</p>
                     </div>
-                    <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
-                      <div>
-                        <p className="text-slate-400 font-medium">Sotish narxi (Dona)</p>
-                        <p className="text-slate-800 dark:text-slate-200 font-semibold mt-0.5">{formatCurrency(item.unitPrice)}</p>
-                      </div>
-                      <div>
-                        <p className="text-slate-400 font-medium">Tan narxi (Dona)</p>
-                        <p className="text-slate-500 dark:text-slate-400 font-semibold mt-0.5">{formatCurrency(item.costTotal / item.quantity)}</p>
-                      </div>
-                      <div className="border-t border-slate-200 dark:border-slate-800 pt-2 col-span-2 flex justify-between items-center mt-1">
-                        <div>
-                          <span className="text-slate-400 font-medium">Jami tushum</span>
-                          <p className="text-blue-600 dark:text-blue-400 font-bold text-sm mt-0.5">{formatCurrency(item.soldTotal)}</p>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-slate-400 font-medium">Sof foyda</span>
-                          <p className="text-emerald-600 dark:text-emerald-400 font-bold text-sm mt-0.5">{formatCurrency(item.soldTotal - item.costTotal)}</p>
-                        </div>
-                      </div>
+                    <div className="text-right">
+                      <span className="font-medium text-slate-400">Sof foyda</span>
+                      <p className="mt-0.5 text-sm font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(item.soldTotal - item.costTotal)}</p>
                     </div>
                   </div>
-                ))
-              )}
-            </div>
-          </div>
-          <div className="shrink-0 border-t border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-950">
-            <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-              <div><p className="text-slate-500 dark:text-slate-400">Umumiy son</p><p className="font-bold text-slate-900 dark:text-slate-100">{productsQuantity} ta</p></div>
-              <div><p className="text-slate-500 dark:text-slate-400">Umumiy tan narx</p><p className="font-bold text-slate-900 dark:text-slate-100">{formatCurrency(productsCost)}</p></div>
-              <div><p className="text-slate-500 dark:text-slate-400">Umumiy sotilgan narx</p><p className="font-bold text-blue-700 dark:text-blue-200">{formatCurrency(productsTotal)}</p></div>
-              <div><p className="text-slate-500 dark:text-slate-400">Foyda</p><p className="font-bold text-emerald-700 dark:text-emerald-200">{formatCurrency(productsProfit)}</p></div>
-            </div>
-          </div>
-        </aside>
-      )}      {drawer === 'income' && (
-        <aside className="fixed right-0 top-0 z-50 h-screen w-full max-w-md overflow-y-auto bg-white p-6 shadow-2xl dark:bg-slate-950">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Daromad tafsiloti</h3>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Naqd va karta bo'limi</p>
-            </div>
-            <button onClick={() => setDrawer(null)} className="rounded-full bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">Yopish</button>
-          </div>
-          <div className="mt-6 space-y-4">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
-              <p className="text-sm text-slate-500 dark:text-slate-400">Naqd</p>
-              <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(Number(incomeCash))}</p>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
-              <p className="text-sm text-slate-500 dark:text-slate-400">Karta</p>
-              <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(Number(incomeCard))}</p>
-            </div>
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/60 dark:bg-amber-950/40">
-              <p className="text-sm text-amber-600 dark:text-amber-300">Umumiy daromad</p>
-              <p className="mt-2 text-2xl font-semibold text-amber-900 dark:text-amber-100">{formatCurrency(Number(incomeTotal))}</p>
-            </div>
-          </div>
-        </aside>
-      )}      {drawer === 'debts' && (
-        <aside className="fixed right-0 top-0 z-50 flex h-screen w-full max-w-md flex-col bg-white shadow-2xl dark:bg-slate-950 animate-slide-in">
-          <div className="shrink-0 border-b border-slate-200 p-6 dark:border-slate-800">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Qarz tafsiloti</h3>
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Tanlangan davr bo'yicha qarz olingan va to'langan summalar</p>
+                </div>
               </div>
-              <button onClick={() => setDrawer(null)} className="rounded-2xl border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+            ))
+          )}
+        </div>
+      </Drawer>
 
-            <div className="mt-5 grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setDebtFilter((prev) => (prev === 'borrowed' ? 'all' : 'borrowed'))}
-                className={`rounded-2xl border p-4 text-left transition-colors duration-150 ${debtFilter === 'borrowed' ? 'border-rose-400 bg-rose-100 ring-2 ring-rose-300 dark:border-rose-500 dark:bg-rose-900/60' : 'border-rose-200 bg-rose-50 hover:bg-rose-100 dark:border-rose-900/60 dark:bg-rose-950/40'}`}
-              >
-                <p className="text-xs font-medium uppercase tracking-[0.14em] text-rose-600 dark:text-rose-300">Qarz olingan</p>
-                <p className="mt-2 break-words text-2xl font-bold leading-tight text-rose-800 dark:text-rose-100">{formatCurrency(borrowedTotal)}</p>
-                <p className="mt-1 text-xs text-rose-500 dark:text-rose-400">{borrowedDebts.length} ta operatsiya</p>
-              </button>
-              <button
-                type="button"
-                onClick={() => setDebtFilter((prev) => (prev === 'paid' ? 'all' : 'paid'))}
-                className={`rounded-2xl border p-4 text-left transition-colors duration-150 ${debtFilter === 'paid' ? 'border-emerald-400 bg-emerald-100 ring-2 ring-emerald-300 dark:border-emerald-500 dark:bg-emerald-900/60' : 'border-emerald-200 bg-emerald-50 hover:bg-emerald-100 dark:border-emerald-900/60 dark:bg-emerald-950/40'}`}
-              >
-                <p className="text-xs font-medium uppercase tracking-[0.14em] text-emerald-600 dark:text-emerald-300">Qarz to'langan</p>
-                <p className="mt-2 break-words text-2xl font-bold leading-tight text-emerald-800 dark:text-emerald-100">{formatCurrency(paidTotal)}</p>
-                <p className="mt-1 text-xs text-emerald-500 dark:text-emerald-400">{paidDebts.length} ta operatsiya</p>
-              </button>
-            </div>
-
-            <div className="mt-3 flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-slate-700 dark:bg-slate-800">
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                {debtFilter === 'all' ? 'Barcha operatsiyalar' : debtFilter === 'borrowed' ? 'Faqat qarz olinganlar' : 'Faqat qarz to\'langanlar'}
-              </p>
-              {debtFilter !== 'all' && (
-                <button type="button" onClick={() => setDebtFilter('all')} className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600">
-                  Hammasi
-                </button>
-              )}
-            </div>
-
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800">
-                <p className="text-sm text-slate-500 dark:text-slate-400">Sof qarz</p>
-                <p className="text-lg font-bold text-slate-900 dark:text-slate-100">{formatCurrency(debtsTotal)}</p>
-              </div>
-              <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800">
-                <p className="text-sm text-slate-500 dark:text-slate-400">Qarzdorlar</p>
-                <p className="text-lg font-bold text-slate-900 dark:text-slate-100">{debtorCount} kishi</p>
-              </div>
-            </div>
+      <Drawer
+        open={drawer === 'income'}
+        onClose={() => setDrawer(null)}
+        title="Daromad tafsiloti"
+        subtitle="Naqd va karta bo'limi"
+        maxWidth="max-w-md"
+      >
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+            <p className="text-sm text-slate-500 dark:text-slate-400">Naqd</p>
+            <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(Number(incomeCash))}</p>
           </div>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+            <p className="text-sm text-slate-500 dark:text-slate-400">Karta</p>
+            <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(Number(incomeCard))}</p>
+          </div>
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/60 dark:bg-amber-950/40">
+            <p className="text-sm text-amber-600 dark:text-amber-300">Umumiy daromad</p>
+            <p className="mt-2 text-2xl font-semibold text-amber-900 dark:text-amber-100">{formatCurrency(Number(incomeTotal))}</p>
+          </div>
+        </div>
+      </Drawer>
 
-          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-6">
-            {visibleDebts.length === 0 ? (
-              <p className="text-sm text-slate-500 dark:text-slate-400">Bu davrda operatsiyalar yo'q.</p>
-            ) : (
-              visibleDebts.map((debt) => {
-                const created = new Date(debt.created_at);
-                const isPaid = Number(debt.amount) < 0;
-                return (
-                  <div
-                    key={debt.id}
-                    className={`rounded-2xl border p-4 ${
-                      isPaid
-                        ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-900/60 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-100'
-                        : 'border-rose-200 bg-rose-50 dark:border-rose-900/60 dark:bg-rose-950/40 text-rose-900 dark:text-rose-100'
-                    }`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <p className="font-semibold text-base">{debt.debtor_name ?? `Qarzdor #${debt.debtor_id}`}</p>
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${isPaid ? 'bg-emerald-200/60 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200' : 'bg-rose-200/60 text-rose-800 dark:bg-rose-900/60 dark:text-rose-200'}`}>
-                        {isPaid ? "To'ladi" : "Oldi"}
-                      </span>
-                    </div>
-                    <p className="mt-2 text-2xl font-bold">{formatCurrency(Math.abs(Number(debt.amount)))}</p>
-                    {debt.note && <p className="mt-1 text-sm opacity-80">{debt.note}</p>}
-                    <p className="mt-2 text-xs opacity-65">
-                      {created.toLocaleDateString('uz-UZ')} | {created.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}
-                    </p>
+      <Drawer
+        open={drawer === 'debts'}
+        onClose={() => setDrawer(null)}
+        title="Qarz tafsiloti"
+        subtitle="Tanlangan davr bo'yicha qarz olingan va to'langan summalar"
+        maxWidth="max-w-md"
+      >
+        <div className="mb-5 grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => setDebtFilter((prev) => (prev === 'borrowed' ? 'all' : 'borrowed'))}
+            className={`rounded-2xl border p-4 text-left transition-colors duration-150 ${debtFilter === 'borrowed' ? 'border-rose-400 bg-rose-100 ring-2 ring-rose-300 dark:border-rose-500 dark:bg-rose-900/60' : 'border-rose-200 bg-rose-50 hover:bg-rose-100 dark:border-rose-900/60 dark:bg-rose-950/40'}`}
+          >
+            <p className="text-xs font-medium uppercase tracking-[0.14em] text-rose-600 dark:text-rose-300">Qarz olingan</p>
+            <p className="mt-2 break-words text-2xl font-bold leading-tight text-rose-800 dark:text-rose-100">{formatCurrency(borrowedTotal)}</p>
+            <p className="mt-1 text-xs text-rose-500 dark:text-rose-400">{borrowedDebts.length} ta operatsiya</p>
+          </button>
+          <button
+            type="button"
+            onClick={() => setDebtFilter((prev) => (prev === 'paid' ? 'all' : 'paid'))}
+            className={`rounded-2xl border p-4 text-left transition-colors duration-150 ${debtFilter === 'paid' ? 'border-emerald-400 bg-emerald-100 ring-2 ring-emerald-300 dark:border-emerald-500 dark:bg-emerald-900/60' : 'border-emerald-200 bg-emerald-50 hover:bg-emerald-100 dark:border-emerald-900/60 dark:bg-emerald-950/40'}`}
+          >
+            <p className="text-xs font-medium uppercase tracking-[0.14em] text-emerald-600 dark:text-emerald-300">Qarz to'langan</p>
+            <p className="mt-2 break-words text-2xl font-bold leading-tight text-emerald-800 dark:text-emerald-100">{formatCurrency(paidTotal)}</p>
+            <p className="mt-1 text-xs text-emerald-500 dark:text-emerald-400">{paidDebts.length} ta operatsiya</p>
+          </button>
+        </div>
+
+        <div className="mb-3 flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-slate-700 dark:bg-slate-800">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            {debtFilter === 'all' ? 'Barcha operatsiyalar' : debtFilter === 'borrowed' ? 'Faqat qarz olinganlar' : "Faqat qarz to'langanlar"}
+          </p>
+          {debtFilter !== 'all' && (
+            <Button variant="ghost" size="sm" onClick={() => setDebtFilter('all')}>Hammasi</Button>
+          )}
+        </div>
+
+        <div className="mb-3 grid grid-cols-2 gap-3">
+          <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800">
+            <p className="text-sm text-slate-500 dark:text-slate-400">Sof qarz</p>
+            <p className="text-lg font-bold text-slate-900 dark:text-slate-100">{formatCurrency(debtsTotal)}</p>
+          </div>
+          <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800">
+            <p className="text-sm text-slate-500 dark:text-slate-400">Qarzdorlar</p>
+            <p className="text-lg font-bold text-slate-900 dark:text-slate-100">{debtorCount} kishi</p>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          {visibleDebts.length === 0 ? (
+            <EmptyState message="Bu davrda operatsiyalar yo'q." />
+          ) : (
+            visibleDebts.map((debt) => {
+              const created = new Date(debt.created_at);
+              const isPaid = Number(debt.amount) < 0;
+              return (
+                <div
+                  key={debt.id}
+                  className={`rounded-2xl border p-4 ${
+                    isPaid
+                      ? 'border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-100'
+                      : 'border-rose-200 bg-rose-50 text-rose-900 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-100'
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <p className="text-base font-semibold">{debt.debtor_name ?? `Qarzdor #${debt.debtor_id}`}</p>
+                    <Badge tone={isPaid ? 'emerald' : 'rose'}>{isPaid ? "To'ladi" : "Oldi"}</Badge>
                   </div>
-                );
-              })
-            )}
-          </div>
-        </aside>
-      )}    </Layout>
+                  <p className="mt-2 text-2xl font-bold">{formatCurrency(Math.abs(Number(debt.amount)))}</p>
+                  {debt.note && <p className="mt-1 text-sm opacity-80">{debt.note}</p>}
+                  <p className="mt-2 text-xs opacity-65">
+                    {created.toLocaleDateString('uz-UZ')} | {created.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </Drawer>
+    </Layout>
   )
 }
 
 export default AdminDashboardPage
-
-

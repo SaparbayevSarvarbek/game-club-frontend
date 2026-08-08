@@ -1,6 +1,7 @@
 import { useAuth } from '../../store/auth'
 import { useEffect, useState } from 'react'
-import { MoonIcon, SunIcon } from '@heroicons/react/24/outline'
+import { MoonIcon, SunIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline'
+import Button from '../ui/Button'
 
 const Header = () => {
   const { user, logout } = useAuth()
@@ -28,24 +29,24 @@ const Header = () => {
           <p className="text-sm text-slate-500 dark:text-slate-400">Computer club management in one dashboard</p>
         </div>
         <div className="flex items-center gap-3">
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => setTheme((current) => (current === 'light' ? 'dark' : 'light'))}
-            className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+            aria-label="Tema"
           >
             {theme === 'light' ? <MoonIcon className="h-5 w-5" /> : <SunIcon className="h-5 w-5" />}
-          </button>
+          </Button>
           {user && (
             <>
               <div className="text-right">
                 <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{user.full_name ?? user.username}</p>
                 <p className="text-xs text-slate-500 dark:text-slate-400">{user.role.toUpperCase()}</p>
               </div>
-              <button
-                onClick={logout}
-                className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-              >
+              <Button variant="secondary" size="sm" onClick={logout}>
+                <ArrowRightOnRectangleIcon className="h-4 w-4" />
                 Logout
-              </button>
+              </Button>
             </>
           )}
         </div>

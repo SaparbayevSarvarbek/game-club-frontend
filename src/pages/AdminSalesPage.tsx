@@ -2,10 +2,15 @@ import { useEffect, useMemo, useState } from 'react'
 import Layout from '../components/common/Layout'
 import api from '../services/api'
 import { FetchComputer, FetchProduct, FetchProductSale } from '../types'
-import { formatCurrency } from '../utils/format'
+import { formatCurrency, todayUz } from '../utils/format'
 import { useToast } from '../components/common/Toast'
+import Card from '../components/ui/Card'
+import Field from '../components/ui/Field'
+import Button from '../components/ui/Button'
+import Spinner from '../components/ui/Spinner'
+import EmptyState from '../components/ui/EmptyState'
 
-const today = new Date().toISOString().slice(0, 10)
+const today = todayUz()
 
 const AdminSalesPage = () => {
   const [sales, setSales] = useState<FetchProductSale[]>([])
@@ -46,58 +51,46 @@ const AdminSalesPage = () => {
   const total = useMemo(() => sales.reduce((sum, sale) => sum + Number(sale.total_amount || 0), 0), [sales])
   const quantity = useMemo(() => sales.reduce((sum, sale) => sum + Number(sale.quantity || 0), 0), [sales])
 
-  const inputClass = 'rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100'
-
   return (
     <Layout>
       <div className="space-y-6">
-        <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-cyan-500 via-sky-600 to-blue-700 p-6 text-white shadow-soft dark:from-cyan-950 dark:via-sky-950 dark:to-blue-950">
-          <p className="text-sm uppercase tracking-[0.24em] text-cyan-100">Sotilgan mahsulotlar</p>
+        <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 p-6 text-white shadow-soft dark:from-emerald-950 dark:via-emerald-900 dark:to-teal-950">
+          <p className="text-sm uppercase tracking-[0.24em] text-emerald-100">Sotilgan mahsulotlar</p>
           <div className="mt-4 grid gap-4 md:grid-cols-3">
             <div>
-              <p className="text-sm text-cyan-100">Jami tushum</p>
+              <p className="text-sm text-emerald-100">Jami tushum</p>
               <p className="mt-2 text-4xl font-bold">{formatCurrency(total)}</p>
             </div>
             <div>
-              <p className="text-sm text-cyan-100">Sotilgan soni</p>
+              <p className="text-sm text-emerald-100">Sotilgan soni</p>
               <p className="mt-2 text-4xl font-bold">{quantity} ta</p>
             </div>
             <div>
-              <p className="text-sm text-cyan-100">Yozuvlar</p>
+              <p className="text-sm text-emerald-100">Yozuvlar</p>
               <p className="mt-2 text-4xl font-bold">{sales.length}</p>
             </div>
           </div>
         </section>
 
-        <section className="rounded-3xl bg-white p-6 shadow-soft dark:bg-slate-900">
-          <div className="grid gap-4 md:grid-cols-4">
-            <label className="block">
-              <span className="text-sm text-slate-600 dark:text-slate-300">Sana</span>
-              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={`${inputClass} mt-2`} />
-            </label>
-            <label className="block">
-              <span className="text-sm text-slate-600 dark:text-slate-300">Mahsulot</span>
-              <select value={productId} onChange={(e) => setProductId(e.target.value)} className={`${inputClass} mt-2`}>
-                <option value="">Hammasi</option>
-                {products.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}
-              </select>
-            </label>
-            <label className="block">
-              <span className="text-sm text-slate-600 dark:text-slate-300">Kompyuter</span>
-              <select value={computerId} onChange={(e) => setComputerId(e.target.value)} className={`${inputClass} mt-2`}>
-                <option value="">Hammasi</option>
-                {computers.map((computer) => <option key={computer.id} value={computer.id}>Stol #{computer.number}</option>)}
-              </select>
-            </label>
+        <Card title="Filtrlar">
+          <div className="mt-2 grid gap-4 md:grid-cols-4">
+            <Field as="input" label="Sana" inputProps={{ type: 'date', value: date, onChange: (e: any) => setDate(e.target.value) }} />
+            <Field as="select" label="Mahsulot" inputProps={{ value: productId, onChange: (e: any) => setProductId(e.target.value) }}>
+              <option value="">Hammasi</option>
+              {products.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}
+            </Field>
+            <Field as="select" label="Kompyuter" inputProps={{ value: computerId, onChange: (e: any) => setComputerId(e.target.value) }}>
+              <option value="">Hammasi</option>
+              {computers.map((computer) => <option key={computer.id} value={computer.id}>Stol #{computer.number}</option>)}
+            </Field>
             <div className="flex items-end">
-              <button onClick={load} className="w-full rounded-2xl bg-sky-600 px-5 py-3 text-sm font-semibold text-white hover:bg-sky-500">Yangilash</button>
+              <Button onClick={load} className="w-full">Yangilash</Button>
             </div>
           </div>
-        </section>
+        </Card>
 
-        <section className="rounded-3xl bg-white p-6 shadow-soft dark:bg-slate-900">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Sotuvlar tarixi</h2>
-          <div className="mt-5 overflow-x-auto">
+        <Card title="Sotuvlar tarixi">
+          <div className="mt-2 overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-slate-700">
               <thead className="bg-slate-50 dark:bg-slate-800">
                 <tr>
@@ -108,9 +101,9 @@ const AdminSalesPage = () => {
               </thead>
               <tbody className="divide-y divide-slate-200 bg-white dark:divide-slate-700 dark:bg-slate-900">
                 {loading ? (
-                  <tr><td colSpan={10} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">Yuklanmoqda...</td></tr>
+                  <tr><td colSpan={10} className="px-4 py-10 text-center"><Spinner label="Yuklanmoqda..." /></td></tr>
                 ) : sales.length === 0 ? (
-                  <tr><td colSpan={10} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">Sotuvlar topilmadi.</td></tr>
+                  <tr><td colSpan={10} className="px-4 py-10"><EmptyState message="Sotuvlar topilmadi." /></td></tr>
                 ) : (
                   <>
                     {sales.map((sale) => {
@@ -123,7 +116,7 @@ const AdminSalesPage = () => {
                           <td className="px-4 py-4">{formatCurrency(Number(sale.cost_price || 0))}</td>
                           <td className="px-4 py-4">{sale.quantity} ta</td>
                           <td className="px-4 py-4 font-semibold">{formatCurrency(Number(sale.total_amount))}</td>
-                          <td className="px-4 py-4 font-semibold text-emerald-700">{formatCurrency(Number(sale.profit || 0))}</td>
+                          <td className="px-4 py-4 font-semibold text-emerald-700 dark:text-emerald-300">{formatCurrency(Number(sale.profit || 0))}</td>
                           <td className="px-4 py-4">{created ? created.toLocaleDateString('uz-UZ') : '-'}</td>
                           <td className="px-4 py-4">{created ? created.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
                           <td className="px-4 py-4">{sale.computer_number ? `Stol #${sale.computer_number}` : 'Alohida sotuv'}</td>
@@ -150,7 +143,7 @@ const AdminSalesPage = () => {
               </tbody>
             </table>
           </div>
-        </section>
+        </Card>
       </div>
     </Layout>
   )

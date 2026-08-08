@@ -32,6 +32,37 @@ const parseUzDate = (value: string | Date) => {
   return new Date(`${normalized}+05:00`)
 }
 
+// Today's business date in Asia/Tashkent, matching the backend's `today_uz()`:
+// the day starts at 04:00 local, so times before 04:00 belong to the previous day.
+// Do NOT use `new Date().toISOString().slice(0, 10)` — toISOString() is UTC and
+// yields the wrong date for the first 5 hours of each Tashkent day.
+export const todayUz = (): string => {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: UZ_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(new Date())
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? ''
+  let year = Number(get('year'))
+  let month = Number(get('month'))
+  let day = Number(get('day'))
+  if (Number(get('hour')) < 4) {
+    day -= 1
+    if (day === 0) {
+      month -= 1
+      if (month === 0) {
+        month = 12
+        year -= 1
+      }
+      day = new Date(year, month, 0).getDate()
+    }
+  }
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+}
+
 export const formatDateTime = (value: string | Date) => {
   const date = parseUzDate(value)
   return new Intl.DateTimeFormat('uz-UZ', {

@@ -2,8 +2,13 @@ import { useEffect, useState } from 'react'
 import Layout from '../components/common/Layout'
 import api from '../services/api'
 import { formatCurrency, formatDate } from '../utils/format'
-import IconButton from '../components/common/IconButton'
 import { useToast } from '../components/common/Toast'
+import Card from '../components/ui/Card'
+import Badge from '../components/ui/Badge'
+import StatCard from '../components/ui/StatCard'
+import Modal from '../components/ui/Modal'
+import Spinner from '../components/ui/Spinner'
+import EmptyState from '../components/ui/EmptyState'
 
 const BASE_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace(/\/$/, '')
 
@@ -36,39 +41,44 @@ const AdminDailyReportsPage = () => {
     loadReports()
   }, [])
 
+  const detailItems = [
+    { label: 'Umumiy tushum', value: selectedReport?.total_revenue, tone: 'emerald' },
+    { label: 'Naqd pul', value: selectedReport?.total_cash, tone: 'sky' },
+    { label: 'Karta', value: selectedReport?.total_card, tone: 'amber' },
+    { label: 'Qarz', value: selectedReport?.total_debt, tone: 'rose' },
+    { label: 'Xarajat', value: selectedReport?.total_expenses, tone: 'indigo' },
+    { label: 'Chegirma', value: selectedReport?.total_discount, tone: 'slate' },
+    { label: 'Kamomad', value: selectedReport?.cash_difference, tone: 'teal' },
+  ] as { label: string; value: any; tone: any }[]
+
   return (
     <Layout>
       <div className="space-y-6">
-        <section className="rounded-3xl bg-white dark:bg-slate-800 p-6 shadow-soft">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Kunlik hisobotlar</h2>
-              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Hisobotlar ro'yxati va har bir kun uchun jami o'lchovlar.</p>
-            </div>
-            <div className="rounded-3xl bg-slate-50 dark:bg-slate-700 px-4 py-3 text-sm text-slate-600 dark:text-slate-200">
-              Umumiy saqlangan hisobotlar: {reports.length}
-            </div>
-          </div>
-        </section>
+        <Card
+          title="Kunlik hisobotlar"
+          subtitle="Hisobotlar ro'yxati va har bir kun uchun jami o'lchovlar."
+          actions={<Badge tone="slate" size="md">Umumiy hisobotlar: {reports.length}</Badge>}
+        />
 
         {loading ? (
-          <section className="rounded-3xl bg-white dark:bg-slate-800 p-6 shadow-soft">
-            <p className="text-sm text-slate-500 dark:text-slate-400">Hisobotlar yuklanmoqda...</p>
-          </section>
+          <Card><Spinner label="Hisobotlar yuklanmoqda..." /></Card>
         ) : (
           <div className="grid gap-6 xl:grid-cols-[1.2fr_minmax(360px,1fr)]">
-            <section className="rounded-3xl bg-white dark:bg-slate-800 p-6 shadow-soft">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Hisobotlar ro'yxati</h3>
-              <div className="mt-4 max-h-96 space-y-2 overflow-y-auto">
+            <Card title="Hisobotlar ro'yxati">
+              <div className="mt-2 max-h-96 space-y-2 overflow-y-auto">
                 {reports.length === 0 ? (
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Hozircha hisobotlar mavjud emas.</p>
+                  <EmptyState message="Hozircha hisobotlar mavjud emas." />
                 ) : (
                   reports.map((report) => (
                     <button
                       key={report.id}
                       type="button"
                       onClick={() => setSelectedReport(report)}
-                      className={`w-full rounded-2xl border p-3 text-left transition flex items-center justify-between text-slate-900 dark:text-slate-100 ${selectedReport?.id === report.id ? 'border-sky-500 bg-sky-50 dark:bg-sky-900 dark:border-sky-400' : 'border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:hover:border-slate-600 dark:hover:bg-slate-700'}`}
+                      className={`flex w-full items-center justify-between rounded-2xl border p-3 text-left transition ${
+                        selectedReport?.id === report.id
+                          ? 'border-emerald-500 bg-emerald-50 dark:border-emerald-400 dark:bg-emerald-900/30'
+                          : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600 dark:hover:bg-slate-700'
+                      }`}
                     >
                       <div>
                         <p className="text-xs text-slate-500 dark:text-slate-400">Hisobot sanasi</p>
@@ -82,72 +92,55 @@ const AdminDailyReportsPage = () => {
                   ))
                 )}
               </div>
-            </section>
+            </Card>
 
-            <section className="rounded-3xl bg-white dark:bg-slate-800 p-6 shadow-soft">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Tanlangan kun tafsilotlari</h3>
+            <Card title="Tanlangan kun tafsilotlari">
               {selectedReport ? (
-                <div className="mt-4 space-y-4">
-                  <div className="rounded-3xl bg-slate-50 dark:bg-slate-700 p-4">
+                <div className="mt-2 space-y-4">
+                  <div className="rounded-3xl bg-slate-50 p-4 dark:bg-slate-800">
                     <p className="text-sm text-slate-500 dark:text-slate-400">Sana</p>
                     <p className="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">{new Date(selectedReport.created_at).toLocaleDateString('uz-UZ', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
                   </div>
                   <div className="grid gap-3 sm:grid-cols-2">
-                    {[
-                      { label: 'Umumiy tushum', value: selectedReport.total_revenue },
-                      { label: 'Naqd pul', value: selectedReport.total_cash },
-                      { label: 'Karta', value: selectedReport.total_card },
-                      { label: 'Qarz', value: selectedReport.total_debt },
-                      { label: 'Xarajat', value: selectedReport.total_expenses },
-                      { label: 'Chegirma', value: selectedReport.total_discount },
-                      { label: 'Kamomad', value: selectedReport.cash_difference },
-                    ].map((item) => (
-                      <div key={item.label} className="rounded-3xl bg-white dark:bg-slate-800 p-4 border border-slate-200 dark:border-slate-700">
-                        <p className="text-sm text-slate-500 dark:text-slate-400">{item.label}</p>
-                        <p className="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(Number(item.value ?? 0))}</p>
-                      </div>
+                    {detailItems.map((item) => (
+                      <StatCard key={item.label} label={item.label} value={formatCurrency(Number(item.value ?? 0))} tone={item.tone} valueClassName="text-xl" />
                     ))}
                   </div>
                   {selectedReport.comment && (
-                    <div className="rounded-3xl bg-slate-50 dark:bg-slate-700 p-4 border border-slate-200 dark:border-slate-700">
+                    <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
                       <p className="text-sm text-slate-500 dark:text-slate-400">Izoh</p>
-                      <p className="mt-2 text-sm text-slate-900 dark:text-slate-100 whitespace-pre-line">{selectedReport.comment}</p>
+                      <p className="mt-2 whitespace-pre-line text-sm text-slate-900 dark:text-slate-100">{selectedReport.comment}</p>
                     </div>
                   )}
                   {selectedReport.image_url && (
-                    <div className="rounded-3xl bg-slate-50 dark:bg-slate-700 p-4 border border-slate-200 dark:border-slate-700">
+                    <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
                       <p className="text-sm text-slate-500 dark:text-slate-400">Yuklangan chek rasmi</p>
-                      <a
-                        href={getFullImageUrl(selectedReport.image_url)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="block mt-3"
-                      >
-                        <img
-                          src={getFullImageUrl(selectedReport.image_url)}
-                          alt="Hisobot rasmi"
-                          onClick={(event) => {
-                            event.preventDefault()
-                            setActiveImageUrl(getFullImageUrl(selectedReport.image_url))
-                          }}
-                          className="w-full cursor-pointer rounded-3xl border border-slate-200 dark:border-slate-700 object-contain transition hover:opacity-90 max-h-80"
-                        />
-                      </a>
+                      <img
+                        src={getFullImageUrl(selectedReport.image_url)}
+                        alt="Hisobot rasmi"
+                        onClick={() => setActiveImageUrl(getFullImageUrl(selectedReport.image_url))}
+                        className="mt-3 max-h-80 w-full cursor-pointer rounded-3xl border border-slate-200 object-contain transition hover:opacity-90 dark:border-slate-700"
+                      />
                     </div>
                   )}
                 </div>
               ) : (
-                <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">Ro'yxatdan bir kun tanlang, uning barcha to'lovlari va xarajatlari shu yerda ko'rinadi.</p>
+                <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Ro'yxatdan bir kun tanlang, uning barcha to'lovlari va xarajatlari shu yerda ko'rinadi.</p>
               )}
-            </section>
+            </Card>
           </div>
         )}
-        {activeImageUrl && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 p-4" onClick={() => setActiveImageUrl(null)}>
-            <button onClick={() => setActiveImageUrl(null)} className="absolute right-4 top-4 rounded-2xl border border-slate-300 px-4 py-2 text-sm text-slate-700">Yopish</button>
-            <img src={activeImageUrl} alt="Katta chek rasmi" className="max-h-[90vh] max-w-[90vw] rounded-3xl border border-white dark:border-slate-700 object-contain" onClick={(event) => event.stopPropagation()} />
-          </div>
-        )}
+
+        <Modal
+          open={!!activeImageUrl}
+          onClose={() => setActiveImageUrl(null)}
+          title="Chek rasmi"
+          maxWidth="max-w-4xl"
+        >
+          {activeImageUrl && (
+            <img src={activeImageUrl} alt="Katta chek rasmi" className="max-h-[80vh] w-full rounded-3xl border border-slate-200 object-contain dark:border-slate-700" />
+          )}
+        </Modal>
       </div>
     </Layout>
   )

@@ -24,8 +24,14 @@ instance.interceptors.response.use(
       return Promise.reject(error)
     }
     if (error.response?.status === 401) {
-      window.localStorage.removeItem('gameclub_auth')
-      window.location.href = '/login'
+      // A failed login attempt also returns 401, but we must NOT treat it as a
+      // session-expiry — redirecting here would reload the login page and wipe
+      // the error toast. Only authenticated requests should trigger the redirect.
+      const isLoginRequest = error.config?.url?.includes('/api/auth/login')
+      if (!isLoginRequest) {
+        window.localStorage.removeItem('gameclub_auth')
+        window.location.href = '/login'
+      }
     }
     // Response errors (4xx/5xx) are surfaced by each page's catch block, so the
     // caller decides the message. Rejecting here keeps a single toast per error.
