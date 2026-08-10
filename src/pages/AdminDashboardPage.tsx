@@ -30,13 +30,18 @@ const AdminDashboardPage = () => {
   const detailDate = tab === 'daily' ? startDate : today
 
   useEffect(() => {
+    let ignore = false
     const year = Number(date.slice(0, 4))
     const month = Number(date.slice(5, 7))
     const params = tab === 'daily' ? { start_date: startDate, end_date: endDate } : tab === 'monthly' ? { year, month } : { year }
-    api.fetchAdminStatistics(tab, params).then(setStatistics).catch(console.error)
+    api.fetchAdminStatistics(tab, params).then((data) => {
+      if (!ignore) setStatistics(data)
+    }).catch(console.error)
+    return () => { ignore = true }
   }, [tab, date, startDate, endDate])
 
   useEffect(() => {
+    let ignore = false
     const year = Number(date.slice(0, 4))
     const month = Number(date.slice(5, 7))
     const params = tab === 'daily'
@@ -49,9 +54,12 @@ const AdminDashboardPage = () => {
       api.fetchProductSales(params),
       api.fetchDebtTransactions(params),
     ]).then(([saleData, debtData]) => {
-      setSales(saleData)
-      setDebts(debtData)
+      if (!ignore) {
+        setSales(saleData)
+        setDebts(debtData)
+      }
     }).catch(console.error)
+    return () => { ignore = true }
   }, [tab, date, startDate, endDate])
 
   const productsTotal = useMemo(() => sales.reduce((sum, sale) => sum + Number(sale.total_amount || 0), 0), [sales])

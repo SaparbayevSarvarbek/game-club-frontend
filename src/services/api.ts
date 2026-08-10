@@ -1,4 +1,4 @@
-import axios, { AxiosError } from 'axios'
+import axios, { AxiosError, AxiosProgressEvent } from 'axios'
 import { toast } from '../components/common/Toast'
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
@@ -135,10 +135,10 @@ const createAdminDebtor = async (payload: unknown) => (await instance.post('/api
 const deleteAdminDebtor = async (id: number) => (await instance.delete(`/api/admin/debtors/${id}`)).data
 const restoreAdminDebtor = async (id: number) => (await instance.post(`/api/admin/debtors/${id}/restore`)).data
 
-const uploadImage = async (file: File) => {
+const uploadImage = async (file: File, onUploadProgress?: (progressEvent: AxiosProgressEvent) => void) => {
   const formData = new FormData()
   formData.append('image', file)
-  return (await instance.post('/api/upload-image', formData, { headers: { 'Content-Type': 'multipart/form-data' } })).data
+  return (await instance.post('/api/upload-image', formData, { headers: { 'Content-Type': 'multipart/form-data' }, onUploadProgress })).data
 }
 
 const fetchDailyReports = async () => (await instance.get('/api/daily-reports')).data
